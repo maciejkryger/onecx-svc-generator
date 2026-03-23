@@ -1,4 +1,5 @@
 ///usr/bin/env jbang "$0" "$@" ; exit $?
+//NOINTEGRATIONS
 //DEPS io.quarkus.platform:quarkus-bom:3.32.3@pom
 //DEPS io.quarkus:quarkus-picocli
 //DEPS io.quarkus:quarkus-qute
