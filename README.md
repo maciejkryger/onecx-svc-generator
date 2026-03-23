@@ -56,3 +56,6 @@ jbang onecx-svc-generator@maciejkryger/onecx-svc-generator batch-model \
   --file model.yaml \
   --project ./onecx-demo-svc \
   --package org.tkit.onecx.demo
+
+# clean cache
+jbang cache clear

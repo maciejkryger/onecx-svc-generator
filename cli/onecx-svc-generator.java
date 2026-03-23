@@ -25,7 +25,7 @@ import java.util.*;
 import java.io.IOException;
 
 @QuarkusMain
-public class onecx-svc-generator implements QuarkusApplication {
+class onecx-svc-generator implements QuarkusApplication {
 
     @Override
     public int run(String... args) throws Exception {
