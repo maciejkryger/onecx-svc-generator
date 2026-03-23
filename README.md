@@ -25,10 +25,10 @@ onecx-svc-generator/
 curl -Ls https://sh.jbang.dev | bash -s - app setup
 
 # help
-jbang onecx-svc-generator@maciej-kryger --help
+jbang onecx-svc-generator@maciejkryger/onecx-svc-generator --help
 
 # new service project creation
-jbang onecx-svc-generator@maciej-kryger create-svc \
+jbang onecx-svc-generator@maciejkryger/onecx-svc-generator create-svc \
 --name onecx-demo-svc \
 --group org.tkit.onecx \
 --package org.tkit.onecx.demo \
@@ -36,7 +36,7 @@ jbang onecx-svc-generator@maciej-kryger create-svc \
 
 # add new entity to existing service project and generate Liquibase changelog 
 # ( adding: src/main/java/.../entity/Product.java, src/main/java/.../dao/ProductDAO.java, src/main/java/.../service/ProductService.java, src/main/resources/db/changelog-product.xml)
-jbang onecx-svc-generator@maciej-kryger add-entity \
+jbang onecx-svc-generator@maciejkryger/onecx-svc-generator add-entity \
 --project ./onecx-demo-svc \
 --package org.tkit.onecx.demo \
 --entity Product \
@@ -52,7 +52,7 @@ entities:
   fields: [name:String, price:BigDecimal]
   relations: [category:ManyToOne:Category]
 # generate entities and Liquibase changelogs from model.yaml
-jbang onecx-svc-generator@maciej-kryger batch-model \
+jbang onecx-svc-generator@maciejkryger/onecx-svc-generator batch-model \
   --file model.yaml \
   --project ./onecx-demo-svc \
   --package org.tkit.onecx.demo
