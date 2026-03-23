@@ -146,13 +146,30 @@ class onecx_svc_generator implements QuarkusApplication {
                 for (var e : ents) {
                     List<String> fields = toList(e.get("fields"));
                     List<String> rels = toList(e.get("relations"));
-                    new CommandLine(new AddEntity()).execute(
-                            "--project", project.toString(),
-                            "--package", pkg,
-                            "--entity", Objects.toString(e.get("name")),
-                            fields == null ? new String[]{} : new String[]{"--fields", String.join(" ", fields)},
-                            rels == null ? new String[]{} : new String[]{"--relations", String.join(" ", rels)}
-                    );
+
+                    List<String> args = new ArrayList<>();
+
+                    args.add("--project");
+                    args.add(project.toString());
+
+                    args.add("--package");
+                    args.add(pkg);
+
+                    args.add("--entity");
+                    args.add(e.get("name").toString());
+
+                    if (fields != null && !fields.isEmpty()) {
+                        args.add("--fields");
+                        args.add(String.join(" ", fields));
+                    }
+
+                    if (rels != null && !rels.isEmpty()) {
+                        args.add("--relations");
+                        args.add(String.join(" ", rels));
+                    }
+
+                    new CommandLine(new AddEntity()).execute(args.toArray(new String[0]));
+
                 }
             } catch (Exception e) {
                 e.printStackTrace();
