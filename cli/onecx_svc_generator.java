@@ -25,12 +25,11 @@ import java.nio.file.*;
 import java.util.*;
 import java.io.IOException;
 
-@QuarkusMain
-class onecx_svc_generator implements QuarkusApplication {
+class onecx_svc_generator {
 
-    @Override
-    public int run(String... args) throws Exception {
-        return new CommandLine(new Root()).execute(args);
+    public static void main(String... args) {
+        int exit = new picocli.CommandLine(new Root()).execute(args);
+        System.exit(exit);
     }
 
     @CommandLine.Command(
