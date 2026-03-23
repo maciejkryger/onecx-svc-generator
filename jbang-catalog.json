@@ -1,7 +1,7 @@
 {
   "aliases": {
     "onecx-svc-generator": {
-      "script-ref": "cli/onecx-svc-generator.java",
+      "script-ref": "cli/onecx_svc_generator.java",
       "description": "OneCX service generator (Quarkus + Helm + Liquibase + OpenAPI)"
     }
   }
