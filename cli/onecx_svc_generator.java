@@ -6,17 +6,17 @@
 //DEPS org.yaml:snakeyaml:2.3
 //JAVAC_OPTIONS -parameters
 
-//FILES ../templates/svc-project/pom.xml.tpl
-//FILES ../templates/svc-project/application.properties.tpl
-//FILES ../templates/svc-project/Dockerfile.jvm.tpl
-//FILES ../templates/svc-project/Dockerfile.native.tpl
-//FILES ../templates/svc-project/Chart.yaml.tpl
-//FILES ../templates/svc-project/values.yaml.tpl
-//FILES ../templates/svc-project/openapi-skeleton.yaml.tpl
-//FILES ../templates/entity/Entity.java.tpl
-//FILES ../templates/entity/DAO.java.tpl
-//FILES ../templates/entity/Service.java.tpl
-//FILES ../templates/entity/Liquibase-changelog.xml.tpl
+//FILES templates/svc-project/pom.xml.tpl
+//FILES templates/svc-project/application.properties.tpl
+//FILES templates/svc-project/Dockerfile.jvm.tpl
+//FILES templates/svc-project/Dockerfile.native.tpl
+//FILES templates/svc-project/Chart.yaml.tpl
+//FILES templates/svc-project/values.yaml.tpl
+//FILES templates/svc-project/openapi-skeleton.yaml.tpl
+//FILES tentity/Entity.java.tpl
+//FILES templates/entity/DAO.java.tpl
+//FILES templates/entity/Service.java.tpl
+//FILES templates/entity/Liquibase-changelog.xml.tpl
 
 import io.quarkus.runtime.annotations.QuarkusMain;
 import io.quarkus.runtime.QuarkusApplication;
