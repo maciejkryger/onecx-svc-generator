@@ -6,18 +6,20 @@
 //DEPS org.yaml:snakeyaml:2.3
 //JAVAC_OPTIONS -parameters
 
-//FILES templates/svc-project/pom.xml.tpl
-//FILES templates/svc-project/application.properties.tpl
-//FILES templates/svc-project/Dockerfile.jvm.tpl
-//FILES templates/svc-project/Dockerfile.native.tpl
-//FILES templates/svc-project/Chart.yaml.tpl
-//FILES templates/svc-project/values.yaml.tpl
-//FILES templates/svc-project/openapi-skeleton.yaml.tpl
 
-//FILES templates/entity/Entity.java.tpl
-//FILES templates/entity/DAO.java.tpl
-//FILES templates/entity/Service.java.tpl
-//FILES templates/entity/Liquibase-changelog.xml.tpl
+//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/templates/svc-project/pom.xml.tpl
+//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/templates/svc-project/application.properties.tpl
+//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/templates/entity/Entity.java.tpl
+//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/templates/svc-project/Dockerfile.jvm.tpl
+//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/templates/svc-project/Dockerfile.native.tpl
+//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/templates/svc-project/Chart.yaml.tpl
+//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/templates/svc-project/values.yaml.tpl
+//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/templates/svc-project/openapi-skeleton.yaml.tpl
+
+//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/templates/entity/Entity.java.tpl
+//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/templates/entity/DAO.java.tpl
+//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/templates/entity/Service.java.tpl
+//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/templates/entity/Liquibase-changelog.xml.tpl
 
 import io.quarkus.runtime.annotations.QuarkusMain;
 import io.quarkus.runtime.QuarkusApplication;
