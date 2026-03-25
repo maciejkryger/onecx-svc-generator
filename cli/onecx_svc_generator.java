@@ -13,7 +13,8 @@
 //FILES templates/svc-project/Chart.yaml.tpl
 //FILES templates/svc-project/values.yaml.tpl
 //FILES templates/svc-project/openapi-skeleton.yaml.tpl
-//FILES tentity/Entity.java.tpl
+
+//FILES templates/entity/Entity.java.tpl
 //FILES templates/entity/DAO.java.tpl
 //FILES templates/entity/Service.java.tpl
 //FILES templates/entity/Liquibase-changelog.xml.tpl
