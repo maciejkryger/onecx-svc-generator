@@ -7,7 +7,7 @@
 //JAVAC_OPTIONS -parameters
 
 
-//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/templates/pom.xml.tpl
+//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/pom.xml.tpl
 //FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/templates/application.properties.tpl
 //FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/templates/Dockerfile.jvm.tpl
 //FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/templates/Dockerfile.native.tpl
@@ -60,7 +60,7 @@ class onecx_svc_generator {
                 Path root = Path.of(name);
                 Files.createDirectories(root);
 
-                copyTemplate("templates/pom.xml.tpl", root.resolve("pom.xml"), Map.of(
+                copyTemplate("pom.xml.tpl", root.resolve("pom.xml"), Map.of(
                         "name", name, "group", group, "package", pkg, "parentVersion", parentVersion));
 
                 Files.createDirectories(root.resolve("src/main/resources"));
