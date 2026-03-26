@@ -9,7 +9,6 @@
 
 //FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/templates/svc-project/pom.xml.tpl
 //FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/templates/svc-project/application.properties.tpl
-//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/templates/svc-project/templates/entity/Entity.java.tpl
 //FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/templates/svc-project/Dockerfile.jvm.tpl
 //FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/templates/svc-project/Dockerfile.native.tpl
 //FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/templates/svc-project/Chart.yaml.tpl
