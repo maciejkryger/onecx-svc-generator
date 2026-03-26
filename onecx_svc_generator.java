@@ -185,8 +185,8 @@ class onecx_svc_generator {
     }
 
     static void copyTemplate(String sourceRel, Path target, Map<String,?> ctx) throws IOException {
-        Path template = scriptDir().resolve(sourceRel).normalize();
-        String out = Files.readString(template);
+        Path source = scriptDir().resolve(sourceRel).normalize();
+        String out = Files.readString(source);
         for (var e : ctx.entrySet()) {
             out = out.replace("{{" + e.getKey() + "}}", Objects.toString(e.getValue(), ""));
         }
