@@ -7,14 +7,14 @@
 //JAVAC_OPTIONS -parameters
 
 
-//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/pom.xml.tpl
-//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/application.properties.tpl
-//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/templates/entity/Entity.java.tpl
-//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/Dockerfile.jvm.tpl
-//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/Dockerfile.native.tpl
-//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/Chart.yaml.tpl
-//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/values.yaml.tpl
-//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/openapi-skeleton.yaml.tpl
+//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/templates/svc-project/pom.xml.tpl
+//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/templates/svc-project/application.properties.tpl
+//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/templates/svc-project/templates/entity/Entity.java.tpl
+//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/templates/svc-project/Dockerfile.jvm.tpl
+//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/templates/svc-project/Dockerfile.native.tpl
+//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/templates/svc-project/Chart.yaml.tpl
+//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/templates/svc-project/values.yaml.tpl
+//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/templates/svc-project/openapi-skeleton.yaml.tpl
 
 //FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/templates/entity/Entity.java.tpl
 //FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/templates/entity/DAO.java.tpl
