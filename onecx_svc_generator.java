@@ -8,17 +8,17 @@
 
 
 //FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/pom.xml.tpl
-//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/templates/application.properties.tpl
-//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/templates/Dockerfile.jvm.tpl
-//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/templates/Dockerfile.native.tpl
-//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/templates/Chart.yaml.tpl
-//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/templates/values.yaml.tpl
-//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/templates/openapi-skeleton.yaml.tpl
+//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/application.properties.tpl
+//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/Dockerfile.jvm.tpl
+//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/Dockerfile.native.tpl
+//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/Chart.yaml.tpl
+//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/values.yaml.tpl
+//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/openapi-skeleton.yaml.tpl
 
-//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/templates/Entity.java.tpl
-//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/templates/DAO.java.tpl
-//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/templates/Service.java.tpl
-//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/templates/Liquibase-changelog.xml.tpl
+//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/Entity.java.tpl
+//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/DAO.java.tpl
+//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/Service.java.tpl
+//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/Liquibase-changelog.xml.tpl
 
 import io.quarkus.runtime.annotations.QuarkusMain;
 import io.quarkus.runtime.QuarkusApplication;
@@ -64,19 +64,19 @@ class onecx_svc_generator {
                         "name", name, "group", group, "package", pkg, "parentVersion", parentVersion));
 
                 Files.createDirectories(root.resolve("src/main/resources"));
-                copyTemplate("templates/application.properties.tpl",
+                copyTemplate("application.properties.tpl",
                         root.resolve("src/main/resources/application.properties"), Map.of("name", name));
 
                 Path docker = root.resolve("src/main/docker"); Files.createDirectories(docker);
-                copyTemplate("templates/Dockerfile.jvm.tpl", docker.resolve("Dockerfile.jvm"), Map.of());
-                copyTemplate("templates/Dockerfile.native.tpl", docker.resolve("Dockerfile.native"), Map.of());
+                copyTemplate("Dockerfile.jvm.tpl", docker.resolve("Dockerfile.jvm"), Map.of());
+                copyTemplate("Dockerfile.native.tpl", docker.resolve("Dockerfile.native"), Map.of());
 
                 Path helm = root.resolve("src/main/helm"); Files.createDirectories(helm);
-                copyTemplate("templates/Chart.yaml.tpl", helm.resolve("Chart.yaml"), Map.of("name", name));
-                copyTemplate("templates/values.yaml.tpl", helm.resolve("values.yaml"), Map.of("name", name));
+                copyTemplate("Chart.yaml.tpl", helm.resolve("Chart.yaml"), Map.of("name", name));
+                copyTemplate("values.yaml.tpl", helm.resolve("values.yaml"), Map.of("name", name));
 
                 Path openapi = root.resolve("src/main/openapi"); Files.createDirectories(openapi);
-                copyTemplate("templates/openapi-skeleton.yaml.tpl",
+                copyTemplate("openapi-skeleton.yaml.tpl",
                         openapi.resolve(name + "-v1.yaml"), Map.of("package", pkg, "name", name));
 
                 System.out.println("✔ OneCX Service generated: " + root.toAbsolutePath());
@@ -121,10 +121,10 @@ class onecx_svc_generator {
                 Files.createDirectories(base.resolve("service"));
                 Files.createDirectories(db);
 
-                copyTemplate("templates/Entity.java.tpl", base.resolve("entity/" + entity + ".java"), ctx);
-                copyTemplate("templates/DAO.java.tpl", base.resolve("dao/" + entity + "DAO.java"), ctx);
-                copyTemplate("templates/Service.java.tpl", base.resolve("service/" + entity + "Service.java"), ctx);
-                copyTemplate("templates/Liquibase-changelog.xml.tpl", db.resolve("changelog-" + entity.toLowerCase() + ".xml"), ctx);
+                copyTemplate("Entity.java.tpl", base.resolve("entity/" + entity + ".java"), ctx);
+                copyTemplate("DAO.java.tpl", base.resolve("dao/" + entity + "DAO.java"), ctx);
+                copyTemplate("Service.java.tpl", base.resolve("service/" + entity + "Service.java"), ctx);
+                copyTemplate("Liquibase-changelog.xml.tpl", db.resolve("changelog-" + entity.toLowerCase() + ".xml"), ctx);
 
                 System.out.println("✔ Entity generated: " + entity);
             } catch (Exception e) {
