@@ -7,14 +7,14 @@
 //JAVAC_OPTIONS -parameters
 
 
-//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/templates/svc-project/pom.xml.tpl
-//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/templates/svc-project/application.properties.tpl
+//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/pom.xml.tpl
+//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/application.properties.tpl
 //FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/templates/entity/Entity.java.tpl
-//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/templates/svc-project/Dockerfile.jvm.tpl
-//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/templates/svc-project/Dockerfile.native.tpl
-//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/templates/svc-project/Chart.yaml.tpl
-//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/templates/svc-project/values.yaml.tpl
-//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/templates/svc-project/openapi-skeleton.yaml.tpl
+//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/Dockerfile.jvm.tpl
+//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/Dockerfile.native.tpl
+//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/Chart.yaml.tpl
+//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/values.yaml.tpl
+//FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/openapi-skeleton.yaml.tpl
 
 //FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/templates/entity/Entity.java.tpl
 //FILES https://raw.githubusercontent.com/maciejkryger/onecx-svc-generator/main/templates/entity/DAO.java.tpl
@@ -61,23 +61,23 @@ class onecx_svc_generator {
                 Path root = Path.of(name);
                 Files.createDirectories(root);
 
-                copyTemplate("templates/svc-project/pom.xml.tpl", root.resolve("pom.xml"), Map.of(
+                copyTemplate("pom.xml.tpl", root.resolve("pom.xml"), Map.of(
                         "name", name, "group", group, "package", pkg, "parentVersion", parentVersion));
 
                 Files.createDirectories(root.resolve("src/main/resources"));
-                copyTemplate("templates/svc-project/application.properties.tpl",
+                copyTemplate("application.properties.tpl",
                         root.resolve("src/main/resources/application.properties"), Map.of("name", name));
 
                 Path docker = root.resolve("src/main/docker"); Files.createDirectories(docker);
-                copyTemplate("templates/svc-project/Dockerfile.jvm.tpl", docker.resolve("Dockerfile.jvm"), Map.of());
-                copyTemplate("templates/svc-project/Dockerfile.native.tpl", docker.resolve("Dockerfile.native"), Map.of());
+                copyTemplate("Dockerfile.jvm.tpl", docker.resolve("Dockerfile.jvm"), Map.of());
+                copyTemplate("Dockerfile.native.tpl", docker.resolve("Dockerfile.native"), Map.of());
 
                 Path helm = root.resolve("src/main/helm"); Files.createDirectories(helm);
-                copyTemplate("templates/svc-project/Chart.yaml.tpl", helm.resolve("Chart.yaml"), Map.of("name", name));
-                copyTemplate("templates/svc-project/values.yaml.tpl", helm.resolve("values.yaml"), Map.of("name", name));
+                copyTemplate("Chart.yaml.tpl", helm.resolve("Chart.yaml"), Map.of("name", name));
+                copyTemplate("values.yaml.tpl", helm.resolve("values.yaml"), Map.of("name", name));
 
                 Path openapi = root.resolve("src/main/openapi"); Files.createDirectories(openapi);
-                copyTemplate("templates/svc-project/openapi-skeleton.yaml.tpl",
+                copyTemplate("openapi-skeleton.yaml.tpl",
                         openapi.resolve(name + "-v1.yaml"), Map.of("package", pkg, "name", name));
 
                 System.out.println("✔ OneCX Service generated: " + root.toAbsolutePath());
