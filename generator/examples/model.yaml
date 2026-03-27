@@ -1,0 +1,10 @@
+entities:
+  - name: Category
+    fields:
+      - name:String
+  - name: Product
+    fields:
+      - name:String
+      - price:BigDecimal
+    relations:
+      - category:ManyToOne:Category
