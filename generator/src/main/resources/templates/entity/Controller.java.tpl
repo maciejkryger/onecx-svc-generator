@@ -21,14 +21,19 @@ public class {{entity}}Controller implements {{generatedApiInterface}} {
 
     @Override
     public Response getAll{{resourceOperationPlural}}() {
-        List<{{generatedDto}}> result = service.listAll().stream().map(mapper::toDto).toList();
+        List<{{generatedDto}}> result = service.listAll()
+                .stream()
+                .map(mapper::toDto)
+                .toList();
         return Response.ok(result).build();
     }
 
     @Override
     public Response create{{entity}}({{generatedDto}} dto) {
         var created = service.create(mapper.fromDto(dto));
-        return Response.status(Response.Status.CREATED).entity(mapper.toDto(created)).build();
+        return Response.status(Response.Status.CREATED)
+                .entity(mapper.toDto(created))
+                .build();
     }
 
     @Override

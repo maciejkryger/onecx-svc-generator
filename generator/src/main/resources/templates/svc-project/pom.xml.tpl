@@ -19,6 +19,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.parameters>true</maven.compiler.parameters>
         <maven.compiler.release>17</maven.compiler.release>
+
         <api.package>{{generatedApiPackage}}</api.package>
         <model.package>{{generatedModelPackage}}</model.package>
         <internal.api.package>{{generatedInternalApiPackage}}</internal.api.package>
@@ -26,6 +27,7 @@
     </properties>
 
     <dependencies>
+        <!-- OneCX / TKit -->
         <dependency>
             <groupId>org.tkit.onecx.quarkus</groupId>
             <artifactId>onecx-permissions</artifactId>
@@ -54,6 +56,8 @@
             <groupId>org.tkit.quarkus.lib</groupId>
             <artifactId>tkit-quarkus-security</artifactId>
         </dependency>
+
+        <!-- Quarkus -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-arc</artifactId>
@@ -73,6 +77,10 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-orm</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-hibernate-orm-panache</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -102,6 +110,8 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-rest-client-oidc-filter</artifactId>
         </dependency>
+
+        <!-- Mapping -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
@@ -121,24 +131,31 @@
                 <executions>
                     <execution>
                         <id>external-v1</id>
-                        <goals><goal>generate</goal></goals>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
                         <configuration>
                             <inputSpec>${project.basedir}/src/main/openapi/{{name}}-v1.yaml</inputSpec>
                             <generatorName>jaxrs-spec</generatorName>
                             <library>quarkus</library>
+
                             <apiPackage>${api.package}</apiPackage>
                             <modelPackage>${model.package}</modelPackage>
+
                             <apiNameSuffix>Api</apiNameSuffix>
                             <modelNameSuffix>DTO</modelNameSuffix>
+
                             <additionalProperties>
                                 onecx-permissions=true
                             </additionalProperties>
+
                             <generateApiTests>false</generateApiTests>
                             <generateApiDocumentation>false</generateApiDocumentation>
                             <generateModelTests>false</generateModelTests>
                             <generateModelDocumentation>false</generateModelDocumentation>
                             <generateSupportingFiles>false</generateSupportingFiles>
                             <addCompileSourceRoot>true</addCompileSourceRoot>
+
                             <configOptions>
                                 <sourceFolder>/</sourceFolder>
                                 <openApiNullable>false</openApiNullable>
@@ -148,26 +165,34 @@
                                 <dateLibrary>java8</dateLibrary>
                                 <useJakartaEe>true</useJakartaEe>
                                 <useSwaggerAnnotations>false</useSwaggerAnnotations>
+                                <useTags>true</useTags>
                             </configOptions>
                         </configuration>
                     </execution>
+
                     <execution>
                         <id>internal</id>
-                        <goals><goal>generate</goal></goals>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
                         <configuration>
                             <inputSpec>${project.basedir}/src/main/openapi/{{name}}-internal.yaml</inputSpec>
                             <generatorName>jaxrs-spec</generatorName>
                             <library>quarkus</library>
+
                             <apiPackage>${internal.api.package}</apiPackage>
                             <modelPackage>${internal.model.package}</modelPackage>
+
                             <apiNameSuffix>Api</apiNameSuffix>
                             <modelNameSuffix>DTO</modelNameSuffix>
+
                             <generateApiTests>false</generateApiTests>
                             <generateApiDocumentation>false</generateApiDocumentation>
                             <generateModelTests>false</generateModelTests>
                             <generateModelDocumentation>false</generateModelDocumentation>
                             <generateSupportingFiles>false</generateSupportingFiles>
                             <addCompileSourceRoot>true</addCompileSourceRoot>
+
                             <configOptions>
                                 <sourceFolder>/</sourceFolder>
                                 <openApiNullable>false</openApiNullable>
@@ -177,6 +202,7 @@
                                 <dateLibrary>java8</dateLibrary>
                                 <useJakartaEe>true</useJakartaEe>
                                 <useSwaggerAnnotations>false</useSwaggerAnnotations>
+                                <useTags>true</useTags>
                             </configOptions>
                         </configuration>
                     </execution>
