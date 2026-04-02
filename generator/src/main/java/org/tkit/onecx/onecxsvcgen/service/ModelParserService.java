@@ -122,9 +122,23 @@ public class ModelParserService {
         return out;
     }
 
+    public String tableName(String entity) {
+        return dbName(entity);
+    }
+
+    private String dbName(String value) {
+        return value
+                .replaceAll("([a-z0-9])([A-Z])", "$1_$2")
+                .replace("-", "_")
+                .toLowerCase();
+    }
+
     public String buildFieldsDecl(List<FieldDef> fields) {
         StringBuilder sb = new StringBuilder();
         for (FieldDef f : fields) {
+            sb.append("    @Column(name = \"")
+                    .append(dbName(f.name()))
+                    .append("\")\n");
             sb.append("    private ")
                     .append(mapDomainType(f.type()))
                     .append(" ")
@@ -138,9 +152,18 @@ public class ModelParserService {
         StringBuilder sb = new StringBuilder();
         for (RelationDef r : relations) {
             sb.append("    @").append(r.relationType()).append("\n");
-
             String targetType = basePackage + ".domain.models." + r.target();
-            if ("OneToMany".equals(r.relationType()) || "ManyToMany".equals(r.relationType())) {
+
+            if ("ManyToOne".equals(r.relationType()) || "OneToOne".equals(r.relationType())) {
+                sb.append("    @JoinColumn(name = \"")
+                        .append(dbName(r.field()))
+                        .append("_id\")\n");
+                sb.append("    private ")
+                        .append(targetType)
+                        .append(" ")
+                        .append(r.field())
+                        .append(";\n");
+            } else if ("OneToMany".equals(r.relationType()) || "ManyToMany".equals(r.relationType())) {
                 sb.append("    private java.util.List<")
                         .append(targetType)
                         .append("> ")
@@ -157,71 +180,12 @@ public class ModelParserService {
         return sb.toString();
     }
 
-    public String buildGettersSetters(List<FieldDef> fields, List<RelationDef> relations, String basePackage) {
-        StringBuilder sb = new StringBuilder();
-
-        for (FieldDef f : fields) {
-            String upper = upper(f.name());
-            String type = mapDomainType(f.type());
-
-            sb.append("    public ")
-                    .append(type)
-                    .append(" get")
-                    .append(upper)
-                    .append("() { return ")
-                    .append(f.name())
-                    .append("; }\n");
-
-            sb.append("    public void set")
-                    .append(upper)
-                    .append("(")
-                    .append(type)
-                    .append(" ")
-                    .append(f.name())
-                    .append(") { this.")
-                    .append(f.name())
-                    .append(" = ")
-                    .append(f.name())
-                    .append("; }\n");
-        }
-
-        for (RelationDef r : relations) {
-            String upper = upper(r.field());
-            String type = basePackage + ".domain.models." + r.target();
-            String declared = ("OneToMany".equals(r.relationType()) || "ManyToMany".equals(r.relationType()))
-                    ? "java.util.List<" + type + ">"
-                    : type;
-
-            sb.append("    public ")
-                    .append(declared)
-                    .append(" get")
-                    .append(upper)
-                    .append("() { return ")
-                    .append(r.field())
-                    .append("; }\n");
-
-            sb.append("    public void set")
-                    .append(upper)
-                    .append("(")
-                    .append(declared)
-                    .append(" ")
-                    .append(r.field())
-                    .append(") { this.")
-                    .append(r.field())
-                    .append(" = ")
-                    .append(r.field())
-                    .append("; }\n");
-        }
-
-        return sb.toString();
-    }
-
     public String buildLiquibaseColumns(List<FieldDef> fields, List<RelationDef> relations) {
         StringBuilder sb = new StringBuilder();
 
         for (FieldDef f : fields) {
             sb.append("            <column name=\"")
-                    .append(f.name())
+                    .append(dbName(f.name()))
                     .append("\" type=\"")
                     .append(mapLiquibaseType(f.type()))
                     .append("\"/>\n");
@@ -230,8 +194,57 @@ public class ModelParserService {
         for (RelationDef r : relations) {
             if ("ManyToOne".equals(r.relationType()) || "OneToOne".equals(r.relationType())) {
                 sb.append("            <column name=\"")
-                        .append(r.field())
-                        .append("_id\" type=\"BIGINT\"/>\n");
+                        .append(dbName(r.field()))
+                        .append("_id\" type=\"VARCHAR(36)\"/>\n");
+            }
+        }
+
+        return sb.toString();
+    }
+
+    public String buildFindByCriteriaPredicates(List<FieldDef> fields) {
+        StringBuilder sb = new StringBuilder();
+
+        for (FieldDef f : fields) {
+            String upper = upper(f.name());
+            String getter = "criteria.get" + upper + "()";
+
+            switch (f.type()) {
+                case "String" -> {
+                    sb.append("        if (criteria != null && ")
+                            .append(getter)
+                            .append(" != null && !")
+                            .append(getter)
+                            .append(".isBlank()) {\n");
+                    sb.append("            predicates.add(cb.like(cb.lower(root.get(\"")
+                            .append(f.name())
+                            .append("\")), \"%\" + ")
+                            .append(getter)
+                            .append(".toLowerCase() + \"%\"));\n");
+                    sb.append("        }\n");
+                }
+                case "Integer", "int", "Long", "long", "BigDecimal", "Boolean", "boolean", "LocalDate", "LocalDateTime", "UUID" -> {
+                    sb.append("        if (criteria != null && ")
+                            .append(getter)
+                            .append(" != null) {\n");
+                    sb.append("            predicates.add(cb.equal(root.get(\"")
+                            .append(f.name())
+                            .append("\"), ")
+                            .append(getter)
+                            .append("));\n");
+                    sb.append("        }\n");
+                }
+                default -> {
+                    sb.append("        if (criteria != null && ")
+                            .append(getter)
+                            .append(" != null) {\n");
+                    sb.append("            predicates.add(cb.equal(root.get(\"")
+                            .append(f.name())
+                            .append("\"), ")
+                            .append(getter)
+                            .append("));\n");
+                    sb.append("        }\n");
+                }
             }
         }
 
@@ -251,11 +264,19 @@ public class ModelParserService {
     }
 
     public String controllerPackage(String pkg) {
-        return pkg + ".rs.external.v1.controllers";
+        return pkg + ".rs.internal.controllers";
     }
 
     public String mapperPackage(String pkg) {
-        return pkg + ".rs.external.v1.mappers";
+        return pkg + ".rs.internal.mappers";
+    }
+
+    public String generatedInternalApiPackage(String pkg) {
+        return "gen." + pkg + ".rs.internal";
+    }
+
+    public String generatedInternalModelPackage(String pkg) {
+        return "gen." + pkg + ".rs.internal.model";
     }
 
     public String generatedApiPackage(String pkg) {
@@ -293,6 +314,7 @@ public class ModelParserService {
             case "LocalDateTime" -> "TIMESTAMP";
             case "LocalDate" -> "DATE";
             case "Boolean", "boolean" -> "BOOLEAN";
+            case "UUID" -> "VARCHAR(36)";
             default -> "VARCHAR(255)";
         };
     }

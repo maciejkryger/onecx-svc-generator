@@ -1,7 +1,10 @@
-package {{package}}.service;
+package {{domainServicePackage}};
 
-import {{package}}.dao.{{entity}}DAO;
-import {{package}}.entity.{{entity}};
+import {{daoPackage}}.{{entity}}DAO;
+import {{generatedModelPackage}}.{{entity}}SearchCriteriaDTO;
+import {{generatedModelPackage}}.{{generatedDto}};
+import {{mapperPackage}}.{{entity}}Mapper;
+import {{modelPackage}}.{{entity}};
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -15,28 +18,37 @@ public class {{entity}}Service {
     @Inject
     {{entity}}DAO dao;
 
-    public List<{{entity}}> listAll() {
-        return dao.listAll();
+    @Inject
+    {{entity}}Mapper mapper;
+
+    public List<{{entity}}> findByCriteria({{entity}}SearchCriteriaDTO criteria, Integer offset, Integer limit) {
+        return dao.findByCriteria(criteria, offset, limit);
     }
 
-    @Transactional
-    public {{entity}} create({{entity}} entity) {
-        dao.persist(entity);
+    public {{entity}} findById(String id) {
+        {{entity}} entity = dao.findById(id);
+        if (entity == null) {
+            throw new NoSuchElementException("{{entity}} not found: " + id);
+        }
         return entity;
     }
 
     @Transactional
-    public {{entity}} update(Long id, {{entity}} entity) {
-        {{entity}} current = dao.findById(id);
-        if (current == null) {
-            throw new NoSuchElementException("{{entity}} not found: " + id);
-        }
-        entity.setId(id);
-        return dao.getEntityManager().merge(entity);
+    public {{entity}} create({{generatedDto}} dto) {
+        {{entity}} entity = mapper.fromDto(dto);
+        dao.create(entity);
+        return entity;
     }
 
     @Transactional
-    public void delete(Long id) {
+    public {{entity}} update(String id, {{generatedDto}} dto) {
+        {{entity}} entity = findById(id);
+        mapper.update(dto, entity);
+        return dao.update(entity);
+    }
+
+    @Transactional
+    public void delete(String id) {
         dao.deleteById(id);
     }
 }

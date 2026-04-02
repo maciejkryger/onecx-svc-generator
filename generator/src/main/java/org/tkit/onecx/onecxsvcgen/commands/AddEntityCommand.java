@@ -19,7 +19,9 @@ import java.util.Map;
 
 @Command(
         name = "add-entity",
-        description = "Generate domain layer and update API contract. Root entities get CRUD paths; child entities only extend parent schemas."
+        description = "Generate domain layer and update internal/external API contracts. " +
+                "Root entities get CRUD in internal and read/search in external-v1; " +
+                "child entities extend parent schemas."
 )
 public class AddEntityCommand implements Runnable {
 
@@ -63,7 +65,7 @@ public class AddEntityCommand implements Runnable {
     @Option(names = "--api-path", description = "Override the resource path for root entities, e.g. chats")
     String apiPath;
 
-    @Option(names = "--api-tag", description = "Override the OpenAPI tag for root entities")
+    @Option(names = "--api-tag", description = "Override the external OpenAPI tag base for the entity")
     String apiTag;
 
     @Inject
@@ -91,8 +93,12 @@ public class AddEntityCommand implements Runnable {
 
             ApiDef api = new ApiDef(root, apiParent, apiField, apiParentCollection, apiPath, apiTag);
 
+            Path internalSpec = projectPath.resolve("src/main/openapi/" + artifactId + "-internal.yaml");
+            Path externalSpec = projectPath.resolve("src/main/openapi/" + artifactId + "-external-v1.yaml");
+
             openApi.addOrUpdateEntity(
-                    projectPath.resolve("src/main/openapi/" + artifactId + "-v1.yaml"),
+                    internalSpec,
+                    externalSpec,
                     scopePrefix,
                     entity,
                     fields,
@@ -101,22 +107,42 @@ public class AddEntityCommand implements Runnable {
             );
 
             Map<String, Object> ctx = new HashMap<>();
+
             String entityField = naming.lowerCamel(entity);
             String resourcePath = api.path() != null ? api.path() : naming.pluralPath(entity);
-            String tag = api.tag() != null ? api.tag() : resourcePath;
-            String apiInterface = naming.apiInterfaceName(tag);
             String resourceOperationPlural = naming.upperFirst(resourcePath.replace("-", ""));
+
+            String baseTag = api.tag() != null
+                    ? api.tag()
+                    : naming.lowerCamel(resourcePath.replace("-", ""));
+
+            String internalTag = baseTag.endsWith("Internal")
+                    ? baseTag
+                    : baseTag + "Internal";
+
+            String internalApiInterface = naming.apiInterfaceName(internalTag);
+            String externalApiInterface = naming.apiInterfaceName(baseTag) + "V1Api";
 
             ctx.put("package", pkg);
             ctx.put("entity", entity);
             ctx.put("entityField", entityField);
-            ctx.put("resourceTag", tag);
             ctx.put("resourcePath", resourcePath);
             ctx.put("resourceOperationPlural", resourceOperationPlural);
-            ctx.put("generatedApiPackage", models.generatedApiPackage(pkg));
-            ctx.put("generatedModelPackage", models.generatedModelPackage(pkg));
-            ctx.put("generatedApiInterface", apiInterface);
+            ctx.put("tableName", models.tableName(entity));
+
+            // INTERNAL contract bindings
+            ctx.put("resourceTag", internalTag);
+            ctx.put("generatedApiPackage", models.generatedInternalApiPackage(pkg));
+            ctx.put("generatedModelPackage", models.generatedInternalModelPackage(pkg));
+            ctx.put("generatedApiInterface", internalApiInterface);
             ctx.put("generatedDto", entity + "DTO");
+
+            // EXTERNAL placeholders for later iterations
+            ctx.put("generatedExternalApiPackage", models.generatedApiPackage(pkg));
+            ctx.put("generatedExternalModelPackage", models.generatedModelPackage(pkg));
+            ctx.put("generatedExternalDto", entity + "DTOV1");
+            ctx.put("generatedExternalApiInterface", externalApiInterface);
+
             ctx.put("modelPackage", models.modelPackage(pkg));
             ctx.put("daoPackage", models.daoPackage(pkg));
             ctx.put("domainServicePackage", models.domainServicePackage(pkg));
@@ -124,15 +150,15 @@ public class AddEntityCommand implements Runnable {
             ctx.put("mapperPackage", models.mapperPackage(pkg));
             ctx.put("fieldsDecl", models.buildFieldsDecl(fields));
             ctx.put("relationsDecl", models.buildRelationsDecl(relations, pkg));
-            ctx.put("gettersSetters", models.buildGettersSetters(fields, relations, pkg));
             ctx.put("liquibaseColumns", models.buildLiquibaseColumns(fields, relations));
+            ctx.put("findByCriteriaPredicates", models.buildFindByCriteriaPredicates(fields));
 
             Path base = projectPath.resolve("src/main/java/" + pkg.replace('.', '/'));
             Files.createDirectories(base.resolve("domain/models"));
             Files.createDirectories(base.resolve("domain/daos"));
             Files.createDirectories(base.resolve("domain/services"));
-            Files.createDirectories(base.resolve("rs/external/v1/controllers"));
-            Files.createDirectories(base.resolve("rs/external/v1/mappers"));
+            Files.createDirectories(base.resolve("rs/internal/controllers"));
+            Files.createDirectories(base.resolve("rs/internal/mappers"));
             Files.createDirectories(projectPath.resolve("src/main/resources/db"));
 
             templates.renderToFile(
@@ -146,7 +172,7 @@ public class AddEntityCommand implements Runnable {
                     ctx
             );
             templates.renderToFile(
-                    "templates/entity/DomainService.java.tpl",
+                    "templates/entity/Service.java.tpl",
                     base.resolve("domain/services/" + entity + "Service.java"),
                     ctx
             );
@@ -157,25 +183,30 @@ public class AddEntityCommand implements Runnable {
             );
             templates.renderToFile(
                     "templates/entity/Mapper.java.tpl",
-                    base.resolve("rs/external/v1/mappers/" + entity + "Mapper.java"),
+                    base.resolve("rs/internal/mappers/" + entity + "Mapper.java"),
+                    ctx
+            );
+            templates.renderToFile(
+                    "templates/entity/ExceptionMapper.java.tpl",
+                    base.resolve("rs/internal/mappers/ExceptionMapper.java"),
                     ctx
             );
 
             if (root) {
                 templates.renderToFile(
                         "templates/entity/Controller.java.tpl",
-                        base.resolve("rs/external/v1/controllers/" + entity + "Controller.java"),
+                        base.resolve("rs/internal/controllers/" + entity + "Controller.java"),
                         ctx
                 );
             }
 
             System.out.println("✔ Generated domain layer for: " + entity);
             if (root) {
-                System.out.println("✔ Added standalone API CRUD for: " + entity);
+                System.out.println("✔ Updated internal API (CRUD + search) and external-v1 API (get + search) for: " + entity);
             } else {
                 System.out.println(
                         "✔ Added component schema " + entity + " to parent API " + apiParent
-                                + ". No standalone CRUD paths created."
+                                + " in internal and external-v1 contracts. No standalone CRUD paths created."
                 );
             }
         } catch (Exception e) {

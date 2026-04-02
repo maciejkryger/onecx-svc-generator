@@ -2,7 +2,6 @@ package org.tkit.onecx.onecxsvcgen.commands;
 
 import org.tkit.onecx.onecxsvcgen.service.GitHubReleaseService;
 import org.tkit.onecx.onecxsvcgen.service.NamingService;
-import org.tkit.onecx.onecxsvcgen.service.OpenApiService;
 import org.tkit.onecx.onecxsvcgen.service.TemplateService;
 import jakarta.inject.Inject;
 import picocli.CommandLine.Command;
@@ -31,10 +30,14 @@ public class CreateSvcCommand implements Runnable {
     @Option(names = "--output-dir", description = "Directory where the service project should be generated")
     Path outputDir;
 
-    @Inject TemplateService templates;
-    @Inject GitHubReleaseService releases;
-    @Inject NamingService naming;
-    @Inject OpenApiService openApi;
+    @Inject
+    TemplateService templates;
+
+    @Inject
+    GitHubReleaseService releases;
+
+    @Inject
+    NamingService naming;
 
     @Override
     public void run() {
@@ -43,8 +46,8 @@ public class CreateSvcCommand implements Runnable {
                 parentVersion = releases.latestReleaseTag("onecx", "onecx-quarkus3-parent", "2.4.0");
             }
 
-            Path baseDir = (outputDir != null) ? outputDir : Path.of(".");
-            Path root = baseDir.resolve(name);
+            Path baseDir = (outputDir != null ? outputDir : Path.of(".")).toAbsolutePath().normalize();
+            Path root = baseDir.resolve(name).toAbsolutePath().normalize();
             Files.createDirectories(root);
 
             String scopePrefix = naming.scopePrefixFromArtifactId(name);
@@ -55,6 +58,7 @@ public class CreateSvcCommand implements Runnable {
             ctx.put("package", pkg);
             ctx.put("parentVersion", parentVersion);
             ctx.put("scopePrefix", scopePrefix);
+
             ctx.put("generatedApiPackage", "gen." + pkg + ".rs.external.v1");
             ctx.put("generatedModelPackage", "gen." + pkg + ".rs.external.v1.model");
             ctx.put("generatedInternalApiPackage", "gen." + pkg + ".rs.internal");
@@ -67,10 +71,19 @@ public class CreateSvcCommand implements Runnable {
             templates.renderToFile("templates/svc-project/Chart.yaml.tpl", root.resolve("src/main/helm/Chart.yaml"), ctx);
             templates.renderToFile("templates/svc-project/values.yaml.tpl", root.resolve("src/main/helm/values.yaml"), ctx);
 
-            openApi.ensureBase(root.resolve("src/main/openapi/" + name + "-v1.yaml"), scopePrefix, name);
-            openApi.ensureBase(root.resolve("src/main/openapi/" + name + "-internal.yaml"), scopePrefix, name + " internal");
+            // one shared neutral skeleton template used for both contracts
+            templates.renderToFile(
+                    "templates/svc-project/openapi-skeleton.yaml.tpl",
+                    root.resolve("src/main/openapi/" + name + "-internal.yaml"),
+                    ctx
+            );
+            templates.renderToFile(
+                    "templates/svc-project/openapi-skeleton.yaml.tpl",
+                    root.resolve("src/main/openapi/" + name + "-external-v1.yaml"),
+                    ctx
+            );
 
-            System.out.println("✔ Generated OneCX service: " + root.toAbsolutePath());
+            System.out.println("✔ Generated OneCX service: " + root);
             System.out.println("✔ Parent version: " + parentVersion);
             System.out.println("✔ Scope prefix: " + scopePrefix);
         } catch (Exception e) {

@@ -15,22 +15,11 @@
     <name>{{name}}</name>
     <description>{{name}} - OneCX Backend Service</description>
 
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.parameters>true</maven.compiler.parameters>
-        <maven.compiler.release>17</maven.compiler.release>
-
-        <api.package>{{generatedApiPackage}}</api.package>
-        <model.package>{{generatedModelPackage}}</model.package>
-        <internal.api.package>{{generatedInternalApiPackage}}</internal.api.package>
-        <internal.model.package>{{generatedInternalModelPackage}}</internal.model.package>
-    </properties>
-
     <dependencies>
         <!-- OneCX / TKit -->
         <dependency>
             <groupId>org.tkit.onecx.quarkus</groupId>
-            <artifactId>onecx-permissions</artifactId>
+            <artifactId>onecx-tenant</artifactId>
         </dependency>
         <dependency>
             <groupId>org.tkit.quarkus.lib</groupId>
@@ -80,10 +69,6 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-hibernate-orm-panache</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jdbc-postgresql</artifactId>
         </dependency>
         <dependency>
@@ -128,82 +113,64 @@
             <plugin>
                 <groupId>org.openapitools</groupId>
                 <artifactId>openapi-generator-maven-plugin</artifactId>
+
+                <configuration>
+                    <generatorName>jaxrs-spec</generatorName>
+                    <library>quarkus</library>
+
+                    <generateApiTests>false</generateApiTests>
+                    <generateApiDocumentation>false</generateApiDocumentation>
+                    <generateModelTests>false</generateModelTests>
+                    <generateModelDocumentation>false</generateModelDocumentation>
+                    <generateSupportingFiles>false</generateSupportingFiles>
+                    <addCompileSourceRoot>true</addCompileSourceRoot>
+
+                    <additionalProperties>
+                        onecx-scopes=true
+                    </additionalProperties>
+
+                    <configOptions>
+                        <sourceFolder>/</sourceFolder>
+                        <openApiNullable>false</openApiNullable>
+                        <returnResponse>true</returnResponse>
+                        <useTags>true</useTags>
+                        <interfaceOnly>true</interfaceOnly>
+                        <serializableModel>true</serializableModel>
+                        <singleContentTypes>true</singleContentTypes>
+                        <dateLibrary>java8</dateLibrary>
+                        <useMicroProfileOpenAPIAnnotations>true</useMicroProfileOpenAPIAnnotations>
+                        <useJakartaEe>true</useJakartaEe>
+                        <useSwaggerAnnotations>false</useSwaggerAnnotations>
+                        <java17>true</java17>
+                    </configOptions>
+                </configuration>
+
                 <executions>
-                    <execution>
-                        <id>external-v1</id>
-                        <goals>
-                            <goal>generate</goal>
-                        </goals>
-                        <configuration>
-                            <inputSpec>${project.basedir}/src/main/openapi/{{name}}-v1.yaml</inputSpec>
-                            <generatorName>jaxrs-spec</generatorName>
-                            <library>quarkus</library>
-
-                            <apiPackage>${api.package}</apiPackage>
-                            <modelPackage>${model.package}</modelPackage>
-
-                            <apiNameSuffix>Api</apiNameSuffix>
-                            <modelNameSuffix>DTO</modelNameSuffix>
-
-                            <additionalProperties>
-                                onecx-permissions=true
-                            </additionalProperties>
-
-                            <generateApiTests>false</generateApiTests>
-                            <generateApiDocumentation>false</generateApiDocumentation>
-                            <generateModelTests>false</generateModelTests>
-                            <generateModelDocumentation>false</generateModelDocumentation>
-                            <generateSupportingFiles>false</generateSupportingFiles>
-                            <addCompileSourceRoot>true</addCompileSourceRoot>
-
-                            <configOptions>
-                                <sourceFolder>/</sourceFolder>
-                                <openApiNullable>false</openApiNullable>
-                                <returnResponse>true</returnResponse>
-                                <interfaceOnly>true</interfaceOnly>
-                                <serializableModel>true</serializableModel>
-                                <dateLibrary>java8</dateLibrary>
-                                <useJakartaEe>true</useJakartaEe>
-                                <useSwaggerAnnotations>false</useSwaggerAnnotations>
-                                <useTags>true</useTags>
-                            </configOptions>
-                        </configuration>
-                    </execution>
-
                     <execution>
                         <id>internal</id>
                         <goals>
                             <goal>generate</goal>
                         </goals>
                         <configuration>
-                            <inputSpec>${project.basedir}/src/main/openapi/{{name}}-internal.yaml</inputSpec>
-                            <generatorName>jaxrs-spec</generatorName>
-                            <library>quarkus</library>
-
-                            <apiPackage>${internal.api.package}</apiPackage>
-                            <modelPackage>${internal.model.package}</modelPackage>
-
-                            <apiNameSuffix>Api</apiNameSuffix>
+                            <inputSpec>src/main/openapi/{{name}}-internal.yaml</inputSpec>
+                            <apiPackage>{{generatedInternalApiPackage}}</apiPackage>
+                            <modelPackage>{{generatedInternalModelPackage}}</modelPackage>
                             <modelNameSuffix>DTO</modelNameSuffix>
+                            <apiNameSuffix>Api</apiNameSuffix>
+                        </configuration>
+                    </execution>
 
-                            <generateApiTests>false</generateApiTests>
-                            <generateApiDocumentation>false</generateApiDocumentation>
-                            <generateModelTests>false</generateModelTests>
-                            <generateModelDocumentation>false</generateModelDocumentation>
-                            <generateSupportingFiles>false</generateSupportingFiles>
-                            <addCompileSourceRoot>true</addCompileSourceRoot>
-
-                            <configOptions>
-                                <sourceFolder>/</sourceFolder>
-                                <openApiNullable>false</openApiNullable>
-                                <returnResponse>true</returnResponse>
-                                <interfaceOnly>true</interfaceOnly>
-                                <serializableModel>true</serializableModel>
-                                <dateLibrary>java8</dateLibrary>
-                                <useJakartaEe>true</useJakartaEe>
-                                <useSwaggerAnnotations>false</useSwaggerAnnotations>
-                                <useTags>true</useTags>
-                            </configOptions>
+                    <execution>
+                        <id>v1</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <inputSpec>src/main/openapi/{{name}}-external-v1.yaml</inputSpec>
+                            <apiPackage>{{generatedApiPackage}}</apiPackage>
+                            <modelPackage>{{generatedModelPackage}}</modelPackage>
+                            <modelNameSuffix>DTOV1</modelNameSuffix>
+                            <apiNameSuffix>V1Api</apiNameSuffix>
                         </configuration>
                     </execution>
                 </executions>

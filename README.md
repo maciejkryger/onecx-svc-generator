@@ -86,5 +86,5 @@ Recommended flow:
 
 After a release is published:
 ```bash
-jbang onecx-svc-generator@maciejkryger create-svc --name onecx-demo-svc --group org.tkit.onecx --package org.tkit.onecx.demo
+jbang onecx-svc-generator@maciejkryger/onecx-svc-generator create-svc --name onecx-demo-svc --group org.tkit.onecx --package org.tkit.onecx.demo
 ```

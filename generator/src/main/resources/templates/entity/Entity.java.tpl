@@ -1,22 +1,27 @@
 package {{modelPackage}};
 
-import jakarta.persistence.*;
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.UUID;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Table;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
+import org.tkit.quarkus.jpa.models.TraceableEntity;
 
 @Entity
-public class {{entity}} {
+@Table(name = "{{tableName}}")
+@Getter
+@Setter
+@NoArgsConstructor
+@EqualsAndHashCode(callSuper = true)
+@ToString(callSuper = true)
+public class {{entity}} extends TraceableEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(name = "tenant")
+    private String tenant;
 
 {{fieldsDecl}}{{relationsDecl}}
-
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-
-{{gettersSetters}}
 }
