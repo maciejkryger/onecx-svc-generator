@@ -1,6 +1,6 @@
-# onecx-svc-generator
+# OneCX SVC Generator
 
-Stable, JAR-based OneCX SVC generator.
+Generator of OneCX-like Quarkus services, based on a custom template engine and OpenAPI generation.
 
 ## What it does
 
@@ -8,9 +8,6 @@ Stable, JAR-based OneCX SVC generator.
 - generates a permission-aware OpenAPI contract,
 - generates controllers + mappers + domain layer,
 - relies on Maven/OpenAPI generation for REST interfaces and DTOs.
-
-See `README-generator.md` for the full local and release workflow.
-
 
 ## structure
 onecx-svc-generator/
@@ -36,29 +33,58 @@ onecx-svc-generator/
 │  └─ onecx_svc_generator.java
 └─ jbang-catalog.json
 
-## build
-cd generator
-./mvnw package -Dquarkus.package.type=uber-jar
 
-## run locally
-java -jar target/onecx-svc-generator-1.0.0-runner.jar create-svc \
---name onecx-demo-svc \
---group org.tkit.onecx \
---package org.tkit.onecx.demo \
---parent-version 2.4.0
+## Local workflow
 
-## run with jbang
-jbang onecx-svc-generator@maciejkryger create-svc \
---name onecx-demo-svc \
---group org.tkit.onecx \
---package org.tkit.onecx.demo \
---parent-version 2.4.0
+### 1. Build the generator
+```bash
+cd /home/Maciej/projects/onecx/onecx-svc-generator/generator
+mvn clean package -Dquarkus.package.type=uber-jar
+```
 
-## run jbang with local jar
-jbang app install onecx-svc-generator@maciejkryger
+### 2. Generate a new service
+```bash
+cd /home/Maciej/projects/onecx
+java -jar onecx-svc-generator/generator/target/onecx-svc-generator-1.0.0-runner.jar create-svc   --name onecx-demo-svc   --group org.tkit.onecx   --package org.tkit.onecx.demo
+```
 
-onecx-svc-generator create-svc \
---name onecx-demo-svc \
---group org.tkit.onecx \
---package org.tkit.onecx.demo \
---parent-version 2.4.0
+### 3. Add a root entity (creates API + controller + mapper + domain layer)
+```bash
+cd /home/Maciej/projects/onecx
+java -jar onecx-svc-generator/generator/target/onecx-svc-generator-1.0.0-runner.jar add-entity   --project /home/Maciej/projects/onecx/onecx-demo-svc   --package org.tkit.onecx.demo   --entity Product   --fields name:String,price:BigDecimal   --root true
+```
+
+### 4. Add a child entity/component (updates existing API schema, no standalone CRUD)
+```bash
+cd /home/Maciej/projects/onecx
+java -jar onecx-svc-generator/generator/target/onecx-svc-generator-1.0.0-runner.jar add-entity   --project /home/Maciej/projects/onecx/onecx-demo-svc   --package org.tkit.onecx.demo   --entity ProductItem   --fields quantity:Integer,position:Integer   --root false   --api-parent Product   --api-field items   --api-parent-collection true
+```
+
+### 5. Add entities in batch from a model definition file
+```bash
+cd /home/Maciej/projects/onecx
+java -jar onecx-svc-generator/generator/target/onecx-svc-generator-1.0.0-runner.jar batch-model   --project /home/Maciej/projects/onecx/onecx-demo-svc   --package org.tkit.onecx.demo   --model /home/Maciej/projects/onecx/model.yaml
+``` 
+
+### 6. Build the generated service
+```bash
+cd /home/Maciej/projects/onecx/onecx-demo-svc
+mvn clean package
+```
+
+The first build generates REST interfaces and DTOs from OpenAPI using `openapi-generator-maven-plugin`.
+The hand-written controllers and mappers already reference those classes and compile after generation.
+
+## Test from repo later
+
+Do **not** commit the built JAR to the repository root.
+Recommended flow:
+
+1. build the generator JAR locally,
+2. publish it as a GitHub Release asset,
+3. run it via the JBang launcher from the repo catalog.
+
+After a release is published:
+```bash
+jbang onecx-svc-generator@maciejkryger create-svc --name onecx-demo-svc --group org.tkit.onecx --package org.tkit.onecx.demo
+```
