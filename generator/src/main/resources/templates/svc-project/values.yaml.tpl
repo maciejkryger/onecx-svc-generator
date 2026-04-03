@@ -1,13 +1,12 @@
 app:
   name: svc
-image:
-  repository: "onecx/{{name}}"
-  tag: "latest"
+  image:
+    repository: "onecx/{{name}}"
+  db:
+    enabled: true
 
-db:
-  enabled: true
-
-microservice:
-  spec:
-    name: {{name}}
-    description: OneCX Backend Service
+operator:
+  microservice:
+    spec:
+      name: "{{name}}"
+      description: "OneCX backend service"

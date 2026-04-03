@@ -1,4 +1,6 @@
-FROM eclipse-temurin:21-jre as runner
-WORKDIR /work/
-COPY target/quarkus-app/ /work/
-ENTRYPOINT ["java","-jar","/work/quarkus-run.jar"]
+FROM ghcr.io/onecx/docker-quarkus-jvm:0.8.0
+
+COPY --chown=185 target/quarkus-app/lib/ /deployments/lib/
+COPY --chown=185 target/quarkus-app/*.jar /deployments/
+COPY --chown=185 target/quarkus-app/app/ /deployments/app/
+COPY --chown=185 target/quarkus-app/quarkus/ /deployments/quarkus/
