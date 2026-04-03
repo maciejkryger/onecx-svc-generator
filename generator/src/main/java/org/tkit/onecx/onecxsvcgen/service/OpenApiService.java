@@ -441,3 +441,90 @@ public class OpenApiService {
             Map<String, Object> clientCredentials = new LinkedHashMap<>();
             clientCredentials.put("tokenUrl", "https://oauth.simple.api/token");
 
+            Map<String, Object> scopes = new LinkedHashMap<>();
+            scopes.put(scopePrefix + ":all", "Grants access to all operations");
+            scopes.put(scopePrefix + ":read", "Grants read access");
+            scopes.put(scopePrefix + ":write", "Grants write access");
+            scopes.put(scopePrefix + ":delete", "Grants access to delete operations");
+
+            clientCredentials.put("scopes", scopes);
+            flows.put("clientCredentials", clientCredentials);
+            oauth2.put("flows", flows);
+
+            securitySchemes.put("oauth2", oauth2);
+        }
+
+        Map<String, Object> parameters =
+                (Map<String, Object>) components.computeIfAbsent("parameters", k -> new LinkedHashMap<>());
+        parameters.putIfAbsent("limit", Map.of(
+                "in", "query",
+                "name", "limit",
+                "required", false,
+                "schema", Map.of("type", "integer", "format", "int32", "minimum", 1),
+                "description", "Maximum number of items to return"
+        ));
+        parameters.putIfAbsent("offset", Map.of(
+                "in", "query",
+                "name", "offset",
+                "required", false,
+                "schema", Map.of("type", "integer", "format", "int32", "minimum", 0),
+                "description", "Number of items to skip before starting to collect the result set"
+        ));
+
+        Map<String, Object> schemas =
+                (Map<String, Object>) components.computeIfAbsent("schemas", k -> new LinkedHashMap<>());
+
+        schemas.putIfAbsent("ProblemDetailParam", Map.of(
+                "type", "object",
+                "properties", Map.of(
+                        "key", Map.of("type", "string"),
+                        "value", Map.of("type", "string")
+                )
+        ));
+
+        schemas.putIfAbsent("ProblemDetailInvalidParam", Map.of(
+                "type", "object",
+                "properties", Map.of(
+                        "name", Map.of("type", "string"),
+                        "message", Map.of("type", "string")
+                )
+        ));
+
+        schemas.putIfAbsent("ProblemDetailResponse", Map.of(
+                "type", "object",
+                "properties", Map.of(
+                        "errorCode", Map.of("type", "string"),
+                        "detail", Map.of("type", "string"),
+                        "params", Map.of(
+                                "type", "array",
+                                "items", Map.of("$ref", "#/components/schemas/ProblemDetailParam")
+                        ),
+                        "invalidParams", Map.of(
+                                "type", "array",
+                                "items", Map.of("$ref", "#/components/schemas/ProblemDetailInvalidParam")
+                        )
+                )
+        ));
+
+        spec.computeIfAbsent("paths", k -> new LinkedHashMap<>());
+    }
+
+    private void saveYaml(Path file, Map<String, Object> spec) {
+        try {
+            DumperOptions options = new DumperOptions();
+            options.setPrettyFlow(true);
+            options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
+            options.setIndent(2);
+            options.setIndicatorIndent(1);
+            options.setWidth(160);
+
+            Yaml yaml = new Yaml(options);
+
+            Path normalized = file.toAbsolutePath().normalize();
+            Files.createDirectories(normalized.getParent());
+            Files.writeString(normalized, yaml.dump(spec));
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to save OpenAPI file: " + file, e);
+        }
+    }
+}
