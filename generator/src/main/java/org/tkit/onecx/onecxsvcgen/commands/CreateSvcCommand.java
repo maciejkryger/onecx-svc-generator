@@ -77,6 +77,7 @@ public class CreateSvcCommand implements Runnable {
             ctx.put("generatedInternalModelPackage", "gen." + pkg + ".rs.internal.model");
 
             templates.renderToFile("templates/svc-project/pom.xml.tpl", root.resolve("pom.xml"), ctx);
+            templates.renderToFile("templates/svc-project/gitignore.tpl", root.resolve(".gitignore"), ctx);
             templates.renderToFile("templates/svc-project/application.properties.tpl", root.resolve("src/main/resources/application.properties"), ctx);
             templates.renderToFile("templates/svc-project/Dockerfile.jvm.tpl", root.resolve("src/main/docker/Dockerfile.jvm"), ctx);
             templates.renderToFile("templates/svc-project/Dockerfile.native.tpl", root.resolve("src/main/docker/Dockerfile.native"), ctx);
@@ -99,6 +100,7 @@ public class CreateSvcCommand implements Runnable {
             System.out.println("✔ Scope prefix: " + scopePrefix);
 
             if (build) {
+                System.out.println("▶ Build requested, starting Maven build...");
                 buildService.runMavenBuild(root);
             }
         } catch (Exception e) {

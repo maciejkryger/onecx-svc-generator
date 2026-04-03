@@ -52,9 +52,9 @@ java -jar onecx-svc-generator/generator/target/onecx-svc-generator-1.0.0-runner.
 cd /home/Maciej/projects/onecx
 
 java -jar onecx-svc-generator/generator/target/onecx-svc-generator-1.0.0-runner.jar create-svc \
-  --name onecx-demov2-svc \
+  --name onecx-demo-svc \
   --group org.tkit.onecx \
-  --package org.tkit.onecx.demov2 \
+  --package org.tkit.onecx.demo \
   --build true
 ```
 
