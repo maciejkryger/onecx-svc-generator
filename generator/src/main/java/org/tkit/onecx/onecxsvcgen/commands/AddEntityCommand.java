@@ -3,6 +3,7 @@ package org.tkit.onecx.onecxsvcgen.commands;
 import org.tkit.onecx.onecxsvcgen.model.ApiDef;
 import org.tkit.onecx.onecxsvcgen.model.FieldDef;
 import org.tkit.onecx.onecxsvcgen.model.RelationDef;
+import org.tkit.onecx.onecxsvcgen.service.BuildService;
 import org.tkit.onecx.onecxsvcgen.service.ModelParserService;
 import org.tkit.onecx.onecxsvcgen.service.NamingService;
 import org.tkit.onecx.onecxsvcgen.service.OpenApiService;
@@ -68,6 +69,14 @@ public class AddEntityCommand implements Runnable {
     @Option(names = "--api-tag", description = "Override the external OpenAPI tag base for the entity")
     String apiTag;
 
+    @Option(
+            names = "--build",
+            defaultValue = "false",
+            arity = "1",
+            description = "Run 'mvn clean package -DskipTests' in the generated project after generation"
+    )
+    boolean build;
+
     @Inject
     TemplateService templates;
 
@@ -79,6 +88,9 @@ public class AddEntityCommand implements Runnable {
 
     @Inject
     OpenApiService openApi;
+
+    @Inject
+    BuildService buildService;
 
     @Override
     public void run() {
@@ -129,6 +141,7 @@ public class AddEntityCommand implements Runnable {
             ctx.put("resourcePath", resourcePath);
             ctx.put("resourceOperationPlural", resourceOperationPlural);
             ctx.put("tableName", models.tableName(entity));
+            ctx.put("entityImports", models.buildEntityImports(fields));
 
             // INTERNAL contract bindings
             ctx.put("resourceTag", internalTag);
@@ -137,7 +150,7 @@ public class AddEntityCommand implements Runnable {
             ctx.put("generatedApiInterface", internalApiInterface);
             ctx.put("generatedDto", entity + "DTO");
 
-            // EXTERNAL placeholders for later iterations
+            // EXTERNAL placeholders for future split if needed
             ctx.put("generatedExternalApiPackage", models.generatedApiPackage(pkg));
             ctx.put("generatedExternalModelPackage", models.generatedModelPackage(pkg));
             ctx.put("generatedExternalDto", entity + "DTOV1");
@@ -208,6 +221,10 @@ public class AddEntityCommand implements Runnable {
                         "✔ Added component schema " + entity + " to parent API " + apiParent
                                 + " in internal and external-v1 contracts. No standalone CRUD paths created."
                 );
+            }
+
+            if (build) {
+                buildService.runMavenBuild(projectPath);
             }
         } catch (Exception e) {
             throw new RuntimeException("add-entity failed", e);

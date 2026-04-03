@@ -12,9 +12,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 @ApplicationScoped
 public class ModelParserService {
@@ -131,6 +133,32 @@ public class ModelParserService {
                 .replaceAll("([a-z0-9])([A-Z])", "$1_$2")
                 .replace("-", "_")
                 .toLowerCase();
+    }
+
+    public String buildEntityImports(List<FieldDef> fields) {
+        Set<String> imports = new LinkedHashSet<>();
+
+        for (FieldDef f : fields) {
+            switch (f.type()) {
+                case "BigDecimal" -> imports.add("import java.math.BigDecimal;");
+                case "LocalDate" -> imports.add("import java.time.LocalDate;");
+                case "LocalDateTime" -> imports.add("import java.time.LocalDateTime;");
+                case "UUID" -> imports.add("import java.util.UUID;");
+                default -> {
+                    // no import needed
+                }
+            }
+        }
+
+        if (imports.isEmpty()) {
+            return "";
+        }
+
+        StringBuilder sb = new StringBuilder();
+        for (String i : imports) {
+            sb.append(i).append("\n");
+        }
+        return sb.toString();
     }
 
     public String buildFieldsDecl(List<FieldDef> fields) {

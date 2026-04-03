@@ -1,5 +1,6 @@
 package org.tkit.onecx.onecxsvcgen.commands;
 
+import org.tkit.onecx.onecxsvcgen.service.BuildService;
 import org.tkit.onecx.onecxsvcgen.service.GitHubReleaseService;
 import org.tkit.onecx.onecxsvcgen.service.NamingService;
 import org.tkit.onecx.onecxsvcgen.service.TemplateService;
@@ -30,6 +31,14 @@ public class CreateSvcCommand implements Runnable {
     @Option(names = "--output-dir", description = "Directory where the service project should be generated")
     Path outputDir;
 
+    @Option(
+            names = "--build",
+            defaultValue = "false",
+            arity = "1",
+            description = "Run 'mvn clean package -DskipTests' in the generated project after generation"
+    )
+    boolean build;
+
     @Inject
     TemplateService templates;
 
@@ -38,6 +47,9 @@ public class CreateSvcCommand implements Runnable {
 
     @Inject
     NamingService naming;
+
+    @Inject
+    BuildService buildService;
 
     @Override
     public void run() {
@@ -71,7 +83,6 @@ public class CreateSvcCommand implements Runnable {
             templates.renderToFile("templates/svc-project/Chart.yaml.tpl", root.resolve("src/main/helm/Chart.yaml"), ctx);
             templates.renderToFile("templates/svc-project/values.yaml.tpl", root.resolve("src/main/helm/values.yaml"), ctx);
 
-            // one shared neutral skeleton template used for both contracts
             templates.renderToFile(
                     "templates/svc-project/openapi-skeleton.yaml.tpl",
                     root.resolve("src/main/openapi/" + name + "-internal.yaml"),
@@ -86,6 +97,10 @@ public class CreateSvcCommand implements Runnable {
             System.out.println("✔ Generated OneCX service: " + root);
             System.out.println("✔ Parent version: " + parentVersion);
             System.out.println("✔ Scope prefix: " + scopePrefix);
+
+            if (build) {
+                buildService.runMavenBuild(root);
+            }
         } catch (Exception e) {
             throw new RuntimeException("create-svc failed", e);
         }

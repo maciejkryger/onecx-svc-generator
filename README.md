@@ -47,11 +47,21 @@ mvn clean package -Dquarkus.package.type=uber-jar
 cd /home/Maciej/projects/onecx
 java -jar onecx-svc-generator/generator/target/onecx-svc-generator-1.0.0-runner.jar create-svc   --name onecx-demo-svc   --group org.tkit.onecx   --package org.tkit.onecx.demo
 ```
+#### with autobuild - recomended for development, as it compiles the generated code after each change:
+```bash 
+cd /home/Maciej/projects/onecx
+
+java -jar onecx-svc-generator/generator/target/onecx-svc-generator-1.0.0-runner.jar create-svc \
+  --name onecx-demov2-svc \
+  --group org.tkit.onecx \
+  --package org.tkit.onecx.demov2 \
+  --build true
+```
 
 ### 3. Add a root entity (creates API + controller + mapper + domain layer)
 ```bash
 cd /home/Maciej/projects/onecx
-java -jar onecx-svc-generator/generator/target/onecx-svc-generator-1.0.0-runner.jar add-entity   --project /home/Maciej/projects/onecx/onecx-demo-svc   --package org.tkit.onecx.demo   --entity Product   --fields name:String,price:BigDecimal   --root true
+java -jar onecx-svc-generator/generator/target/onecx-svc-generator-1.0.0-runner.jar add-entity   --project /home/Maciej/projects/onecx/onecx-demo-svc   --package org.tkit.onecx.demo   --entity Product   --fields name:String,price:BigDecimal   --root true   --build true
 ```
 
 ### 4. Add a child entity/component (updates existing API schema, no standalone CRUD)

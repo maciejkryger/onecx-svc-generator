@@ -1,6 +1,7 @@
 package org.tkit.onecx.onecxsvcgen.commands;
 
 import org.tkit.onecx.onecxsvcgen.model.EntityDef;
+import org.tkit.onecx.onecxsvcgen.service.BuildService;
 import org.tkit.onecx.onecxsvcgen.service.ModelParserService;
 import org.tkit.onecx.onecxsvcgen.service.NamingService;
 import org.tkit.onecx.onecxsvcgen.service.OpenApiService;
@@ -27,6 +28,14 @@ public class BatchModelCommand implements Runnable {
     @Option(names = "--package", required = true, description = "Base Java package")
     String pkg;
 
+    @Option(
+            names = "--build",
+            defaultValue = "false",
+            arity = "1",
+            description = "Run 'mvn clean package -DskipTests' in the generated project after generation"
+    )
+    boolean build;
+
     @Inject
     ModelParserService models;
 
@@ -38,6 +47,9 @@ public class BatchModelCommand implements Runnable {
 
     @Inject
     OpenApiService openApi;
+
+    @Inject
+    BuildService buildService;
 
     @Override
     public void run() {
@@ -89,6 +101,7 @@ public class BatchModelCommand implements Runnable {
                 ctx.put("resourcePath", resourcePath);
                 ctx.put("resourceOperationPlural", resourceOperationPlural);
                 ctx.put("tableName", models.tableName(entity));
+                ctx.put("entityImports", models.buildEntityImports(entityDef.fields()));
 
                 // INTERNAL contract bindings
                 ctx.put("resourceTag", internalTag);
@@ -165,5 +178,9 @@ public class BatchModelCommand implements Runnable {
         }
 
         System.out.println("✔ Generated " + entities.size() + " entities from model: " + modelFile);
+
+        if (build) {
+            buildService.runMavenBuild(projectPath);
+        }
     }
 }

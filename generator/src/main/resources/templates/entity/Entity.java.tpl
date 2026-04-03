@@ -1,6 +1,6 @@
 package {{modelPackage}};
 
-import jakarta.persistence.Column;
+{{entityImports}}import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;

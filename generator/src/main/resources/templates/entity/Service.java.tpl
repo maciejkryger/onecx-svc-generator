@@ -49,6 +49,7 @@ public class {{entity}}Service {
 
     @Transactional
     public void delete(String id) {
-        dao.deleteById(id);
+        {{entity}} entity = findById(id);
+        dao.delete(entity);
     }
 }

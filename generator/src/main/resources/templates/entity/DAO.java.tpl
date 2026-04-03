@@ -16,10 +16,6 @@ import java.util.List;
 @ApplicationScoped
 public class {{entity}}DAO extends AbstractDAO<{{entity}}> {
 
-    public {{entity}}DAO() {
-        super({{entity}}.class);
-    }
-
     public List<{{entity}}> findByCriteria({{entity}}SearchCriteriaDTO criteria, Integer offset, Integer limit) {
         CriteriaBuilder cb = getEntityManager().getCriteriaBuilder();
         CriteriaQuery<{{entity}}> cq = cb.createQuery({{entity}}.class);
