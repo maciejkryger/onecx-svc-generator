@@ -1,8 +1,11 @@
 entities:
   - name: Category
+    aggregateRoot: false
     fields:
       - name:String
+
   - name: Product
+    aggregateRoot: true
     fields:
       - name:String
       - price:BigDecimal

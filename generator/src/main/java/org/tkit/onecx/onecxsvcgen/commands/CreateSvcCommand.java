@@ -34,7 +34,8 @@ public class CreateSvcCommand implements Runnable {
     @Option(
             names = "--build",
             defaultValue = "false",
-            arity = "1",
+            fallbackValue = "true",
+            arity = "0..1",
             description = "Run 'mvn clean package -DskipTests' in the generated project after generation"
     )
     boolean build;

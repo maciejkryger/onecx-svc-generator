@@ -299,6 +299,10 @@ public class ModelParserService {
         return pkg + ".rs.internal.mappers";
     }
 
+    public String externalControllerPackage(String pkg) {return pkg + ".rs.external.v1.controllers";}
+
+    public String externalMapperPackage(String pkg) {return pkg + ".rs.external.v1.mappers";}
+
     public String generatedInternalApiPackage(String pkg) {
         return "gen." + pkg + ".rs.internal";
     }
@@ -345,5 +349,49 @@ public class ModelParserService {
             case "UUID" -> "VARCHAR(36)";
             default -> "VARCHAR(255)";
         };
+    }
+
+    public String buildRelationMappingMethods(List<RelationDef> relations, String pkg) {
+        StringBuilder sb = new StringBuilder();
+        String generatedModelPackage = generatedInternalModelPackage(pkg);
+        String modelPackage = modelPackage(pkg);
+
+        java.util.Set<String> processed = new java.util.LinkedHashSet<>();
+
+        for (RelationDef relation : relations) {
+            String target = relation.target();
+            if (!processed.add(target)) {
+                continue;
+            }
+
+            sb.append("    @Mapping(target = \"tenant\", ignore = true)\n");
+            sb.append("    @Mapping(target = \"creationDate\", ignore = true)\n");
+            sb.append("    @Mapping(target = \"creationUser\", ignore = true)\n");
+            sb.append("    @Mapping(target = \"modificationDate\", ignore = true)\n");
+            sb.append("    @Mapping(target = \"modificationUser\", ignore = true)\n");
+            sb.append("    @Mapping(target = \"controlTraceabilityManual\", ignore = true)\n");
+            sb.append("    @Mapping(target = \"modificationCount\", ignore = true)\n");
+            sb.append("    @Mapping(target = \"persisted\", ignore = true)\n");
+            sb.append("    ")
+                    .append(modelPackage).append(".").append(target)
+                    .append(" fromDto(")
+                    .append(generatedModelPackage).append(".").append(target).append("DTO dto);\n\n");
+
+            sb.append("    @Mapping(target = \"tenant\", ignore = true)\n");
+            sb.append("    @Mapping(target = \"creationDate\", ignore = true)\n");
+            sb.append("    @Mapping(target = \"creationUser\", ignore = true)\n");
+            sb.append("    @Mapping(target = \"modificationDate\", ignore = true)\n");
+            sb.append("    @Mapping(target = \"modificationUser\", ignore = true)\n");
+            sb.append("    @Mapping(target = \"controlTraceabilityManual\", ignore = true)\n");
+            sb.append("    @Mapping(target = \"modificationCount\", ignore = true)\n");
+            sb.append("    @Mapping(target = \"persisted\", ignore = true)\n");
+            sb.append("    void update(")
+                    .append(generatedModelPackage).append(".").append(target).append("DTO dto, ")
+                    .append("@MappingTarget ")
+                    .append(modelPackage).append(".").append(target)
+                    .append(" entity);\n\n");
+        }
+
+        return sb.toString();
     }
 }

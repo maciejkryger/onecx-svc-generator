@@ -33,4 +33,6 @@ public interface {{entity}}Mapper {
     @Mapping(target = "modificationCount", ignore = true)
     @Mapping(target = "persisted", ignore = true)
     void update({{generatedDto}} dto, @MappingTarget {{entity}} entity);
+
+{{relationMappingMethods}}
 }

@@ -1,6 +1,7 @@
 # OneCX SVC Generator
 
 Generator of OneCX-like Quarkus services, based on a custom template engine and OpenAPI generation.
+Java version 21, Quarkus 3.2, OpenAPI Generator 7.0.1.
 
 ## What it does
 
@@ -61,19 +62,38 @@ java -jar onecx-svc-generator/generator/target/onecx-svc-generator-1.0.0-runner.
 ### 3. Add a root entity (creates API + controller + mapper + domain layer)
 ```bash
 cd /home/Maciej/projects/onecx
-java -jar onecx-svc-generator/generator/target/onecx-svc-generator-1.0.0-runner.jar add-entity   --project /home/Maciej/projects/onecx/onecx-demo-svc   --package org.tkit.onecx.demo   --entity Product   --fields name:String,price:BigDecimal   --root true   --build true
+java -jar onecx-svc-generator/generator/target/onecx-svc-generator-1.0.0-runner.jar add-entity \
+  --project /home/Maciej/projects/onecx/onecx-demo-svc \
+  --package org.tkit.onecx.demo \
+  --entity Product \
+  --fields name:String,price:BigDecimal \
+  --root true \
+  --build true
 ```
 
 ### 4. Add a child entity/component (updates existing API schema, no standalone CRUD)
 ```bash
 cd /home/Maciej/projects/onecx
-java -jar onecx-svc-generator/generator/target/onecx-svc-generator-1.0.0-runner.jar add-entity   --project /home/Maciej/projects/onecx/onecx-demo-svc   --package org.tkit.onecx.demo   --entity ProductItem   --fields quantity:Integer,position:Integer   --root false   --api-parent Product   --api-field items   --api-parent-collection true
+java -jar onecx-svc-generator/generator/target/onecx-svc-generator-1.0.0-runner.jar add-entity \
+  --project /home/Maciej/projects/onecx/onecx-demo-svc \
+  --package org.tkit.onecx.demo \
+  --entity ProductItem \
+  --fields quantity:Integer,position:Integer \
+  --root false \
+  --api-parent Product \
+  --api-field items \
+  --api-parent-collection true \
+  --build true
 ```
 
 ### 5. Add entities in batch from a model definition file
 ```bash
 cd /home/Maciej/projects/onecx
-java -jar onecx-svc-generator/generator/target/onecx-svc-generator-1.0.0-runner.jar batch-model   --project /home/Maciej/projects/onecx/onecx-demo-svc   --package org.tkit.onecx.demo   --model /home/Maciej/projects/onecx/model.yaml
+java -jar onecx-svc-generator/generator/target/onecx-svc-generator-1.0.0-runner.jar batch-model \
+  --project /home/Maciej/projects/onecx/onecx-demo-svc \
+  --package org.tkit.onecx.demo \
+  --model /home/Maciej/projects/onecx/onecx-svc-generator/generator/examples/model.yaml \
+  --build true
 ``` 
 
 ### 6. Build the generated service

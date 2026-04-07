@@ -72,7 +72,8 @@ public class AddEntityCommand implements Runnable {
     @Option(
             names = "--build",
             defaultValue = "false",
-            arity = "1",
+            fallbackValue = "true",
+            arity = "0..1",
             description = "Run 'mvn clean package -DskipTests' in the generated project after generation"
     )
     boolean build;
@@ -133,7 +134,7 @@ public class AddEntityCommand implements Runnable {
                     : baseTag + "Internal";
 
             String internalApiInterface = naming.apiInterfaceName(internalTag);
-            String externalApiInterface = naming.apiInterfaceName(baseTag) + "V1Api";
+            String externalApiInterface = naming.upperFirst(baseTag) + "V1Api";
 
             ctx.put("package", pkg);
             ctx.put("entity", entity);
@@ -144,6 +145,8 @@ public class AddEntityCommand implements Runnable {
             ctx.put("entityImports", models.buildEntityImports(fields));
 
             // INTERNAL contract bindings
+            ctx.put("controllerPackage", models.controllerPackage(pkg));
+            ctx.put("mapperPackage", models.mapperPackage(pkg));
             ctx.put("resourceTag", internalTag);
             ctx.put("generatedApiPackage", models.generatedInternalApiPackage(pkg));
             ctx.put("generatedModelPackage", models.generatedInternalModelPackage(pkg));
@@ -151,6 +154,8 @@ public class AddEntityCommand implements Runnable {
             ctx.put("generatedDto", entity + "DTO");
 
             // EXTERNAL placeholders for future split if needed
+            ctx.put("externalControllerPackage", models.externalControllerPackage(pkg));
+            ctx.put("externalMapperPackage", models.externalMapperPackage(pkg));
             ctx.put("generatedExternalApiPackage", models.generatedApiPackage(pkg));
             ctx.put("generatedExternalModelPackage", models.generatedModelPackage(pkg));
             ctx.put("generatedExternalDto", entity + "DTOV1");
@@ -159,12 +164,12 @@ public class AddEntityCommand implements Runnable {
             ctx.put("modelPackage", models.modelPackage(pkg));
             ctx.put("daoPackage", models.daoPackage(pkg));
             ctx.put("domainServicePackage", models.domainServicePackage(pkg));
-            ctx.put("controllerPackage", models.controllerPackage(pkg));
-            ctx.put("mapperPackage", models.mapperPackage(pkg));
             ctx.put("fieldsDecl", models.buildFieldsDecl(fields));
             ctx.put("relationsDecl", models.buildRelationsDecl(relations, pkg));
             ctx.put("liquibaseColumns", models.buildLiquibaseColumns(fields, relations));
             ctx.put("findByCriteriaPredicates", models.buildFindByCriteriaPredicates(fields));
+            ctx.put("generatedInternalSearchCriteria", entity + "SearchCriteriaDTO");
+            ctx.put("relationMappingMethods", models.buildRelationMappingMethods(relations, pkg));
 
             Path base = projectPath.resolve("src/main/java/" + pkg.replace('.', '/'));
             Files.createDirectories(base.resolve("domain/models"));
@@ -172,6 +177,8 @@ public class AddEntityCommand implements Runnable {
             Files.createDirectories(base.resolve("domain/services"));
             Files.createDirectories(base.resolve("rs/internal/controllers"));
             Files.createDirectories(base.resolve("rs/internal/mappers"));
+            Files.createDirectories(base.resolve("rs/external/v1/controllers"));
+            Files.createDirectories(base.resolve("rs/external/v1/mappers"));
             Files.createDirectories(projectPath.resolve("src/main/resources/db"));
 
             templates.renderToFile(
@@ -205,10 +212,30 @@ public class AddEntityCommand implements Runnable {
                     ctx
             );
 
-            if (root) {
+                        if (root) {
                 templates.renderToFile(
                         "templates/entity/Controller.java.tpl",
                         base.resolve("rs/internal/controllers/" + entity + "Controller.java"),
+                        ctx
+                );
+            }
+
+            templates.renderToFile(
+                    "templates/entity/ExternalMapper.java.tpl",
+                    base.resolve("rs/external/v1/mappers/" + entity + "Mapper.java"),
+                    ctx
+            );
+
+            templates.renderToFile(
+                    "templates/entity/ExternalExceptionMapper.java.tpl",
+                    base.resolve("rs/external/v1/mappers/ExceptionMapper.java"),
+                    ctx
+            );
+
+            if (root) {
+                templates.renderToFile(
+                        "templates/entity/ExternalController.java.tpl",
+                        base.resolve("rs/external/v1/controllers/" + entity + "Controller.java"),
                         ctx
                 );
             }

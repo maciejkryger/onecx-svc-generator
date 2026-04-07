@@ -16,11 +16,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@Command(name = "batch-model", description = "Generate multiple entities from a YAML file")
+@Command(name = "batch-model", description = "Generate multiple entities from a YAML model file")
 public class BatchModelCommand implements Runnable {
 
-    @Option(names = "--file", required = true, description = "YAML file describing entities")
-    Path yamlFile;
+    @Option(
+            names = {"--model", "--file"},
+            required = true,
+            description = "YAML model file describing entities"
+    )
+    Path model;
 
     @Option(names = "--project", required = true, description = "Target generated service path")
     Path project;
@@ -31,7 +35,8 @@ public class BatchModelCommand implements Runnable {
     @Option(
             names = "--build",
             defaultValue = "false",
-            arity = "1",
+            fallbackValue = "true",
+            arity = "0..1",
             description = "Run 'mvn clean package -DskipTests' in the generated project after generation"
     )
     boolean build;
@@ -54,7 +59,14 @@ public class BatchModelCommand implements Runnable {
     @Override
     public void run() {
         Path projectPath = project.toAbsolutePath().normalize();
-        Path modelFile = yamlFile.toAbsolutePath().normalize();
+        Path modelFile = model.toAbsolutePath().normalize();
+
+        if (!Files.exists(modelFile)) {
+            throw new IllegalArgumentException("Model file does not exist: " + modelFile);
+        }
+        if (!Files.isRegularFile(modelFile)) {
+            throw new IllegalArgumentException("Model path is not a file: " + modelFile);
+        }
 
         List<EntityDef> entities = models.parseEntitiesYaml(modelFile);
         String artifactId = projectPath.getFileName().toString();
@@ -93,7 +105,7 @@ public class BatchModelCommand implements Runnable {
                         : baseTag + "Internal";
 
                 String internalApiInterface = naming.apiInterfaceName(internalTag);
-                String externalApiInterface = naming.apiInterfaceName(baseTag) + "V1Api";
+                String externalApiInterface = naming.upperFirst(baseTag) + "V1Api";
 
                 ctx.put("package", pkg);
                 ctx.put("entity", entity);
@@ -102,6 +114,8 @@ public class BatchModelCommand implements Runnable {
                 ctx.put("resourceOperationPlural", resourceOperationPlural);
                 ctx.put("tableName", models.tableName(entity));
                 ctx.put("entityImports", models.buildEntityImports(entityDef.fields()));
+                ctx.put("generatedInternalSearchCriteria", entity + "SearchCriteriaDTO");
+                ctx.put("relationMappingMethods", models.buildRelationMappingMethods(entityDef.relations(), pkg));
 
                 // INTERNAL contract bindings
                 ctx.put("resourceTag", internalTag);
@@ -110,17 +124,23 @@ public class BatchModelCommand implements Runnable {
                 ctx.put("generatedApiInterface", internalApiInterface);
                 ctx.put("generatedDto", entity + "DTO");
 
-                // EXTERNAL placeholders for future split if needed
+                // EXTERNAL contract bindings
                 ctx.put("generatedExternalApiPackage", models.generatedApiPackage(pkg));
                 ctx.put("generatedExternalModelPackage", models.generatedModelPackage(pkg));
-                ctx.put("generatedExternalDto", entity + "DTOV1");
                 ctx.put("generatedExternalApiInterface", externalApiInterface);
+                ctx.put("generatedExternalDto", entity + "DTOV1");
+                ctx.put("generatedExternalSearchCriteria", entity + "SearchCriteriaDTOV1");
 
                 ctx.put("modelPackage", models.modelPackage(pkg));
                 ctx.put("daoPackage", models.daoPackage(pkg));
                 ctx.put("domainServicePackage", models.domainServicePackage(pkg));
+
                 ctx.put("controllerPackage", models.controllerPackage(pkg));
                 ctx.put("mapperPackage", models.mapperPackage(pkg));
+
+                ctx.put("externalControllerPackage", models.externalControllerPackage(pkg));
+                ctx.put("externalMapperPackage", models.externalMapperPackage(pkg));
+
                 ctx.put("fieldsDecl", models.buildFieldsDecl(entityDef.fields()));
                 ctx.put("relationsDecl", models.buildRelationsDecl(entityDef.relations(), pkg));
                 ctx.put("liquibaseColumns", models.buildLiquibaseColumns(entityDef.fields(), entityDef.relations()));
@@ -132,6 +152,8 @@ public class BatchModelCommand implements Runnable {
                 Files.createDirectories(base.resolve("domain/services"));
                 Files.createDirectories(base.resolve("rs/internal/controllers"));
                 Files.createDirectories(base.resolve("rs/internal/mappers"));
+                Files.createDirectories(base.resolve("rs/external/v1/controllers"));
+                Files.createDirectories(base.resolve("rs/external/v1/mappers"));
                 Files.createDirectories(projectPath.resolve("src/main/resources/db"));
 
                 templates.renderToFile(
@@ -154,6 +176,8 @@ public class BatchModelCommand implements Runnable {
                         projectPath.resolve("src/main/resources/db/changelog-" + entity.toLowerCase() + ".xml"),
                         ctx
                 );
+
+                // INTERNAL runtime boundary
                 templates.renderToFile(
                         "templates/entity/Mapper.java.tpl",
                         base.resolve("rs/internal/mappers/" + entity + "Mapper.java"),
@@ -165,10 +189,27 @@ public class BatchModelCommand implements Runnable {
                         ctx
                 );
 
+                // EXTERNAL runtime boundary
+                templates.renderToFile(
+                        "templates/entity/ExternalMapper.java.tpl",
+                        base.resolve("rs/external/v1/mappers/" + entity + "Mapper.java"),
+                        ctx
+                );
+                templates.renderToFile(
+                        "templates/entity/ExternalExceptionMapper.java.tpl",
+                        base.resolve("rs/external/v1/mappers/ExceptionMapper.java"),
+                        ctx
+                );
+
                 if (entityDef.api().expose()) {
                     templates.renderToFile(
                             "templates/entity/Controller.java.tpl",
                             base.resolve("rs/internal/controllers/" + entity + "Controller.java"),
+                            ctx
+                    );
+                    templates.renderToFile(
+                            "templates/entity/ExternalController.java.tpl",
+                            base.resolve("rs/external/v1/controllers/" + entity + "Controller.java"),
                             ctx
                     );
                 }
@@ -180,6 +221,7 @@ public class BatchModelCommand implements Runnable {
         System.out.println("✔ Generated " + entities.size() + " entities from model: " + modelFile);
 
         if (build) {
+            System.out.println("▶ Build requested, starting Maven build...");
             buildService.runMavenBuild(projectPath);
         }
     }
