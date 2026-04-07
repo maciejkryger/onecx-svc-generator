@@ -2,6 +2,7 @@ package org.tkit.onecx.onecxsvcgen.commands;
 
 import org.tkit.onecx.onecxsvcgen.service.BuildService;
 import org.tkit.onecx.onecxsvcgen.service.GitHubReleaseService;
+import org.tkit.onecx.onecxsvcgen.service.LiquibaseChangelogService;
 import org.tkit.onecx.onecxsvcgen.service.NamingService;
 import org.tkit.onecx.onecxsvcgen.service.TemplateService;
 import jakarta.inject.Inject;
@@ -52,6 +53,9 @@ public class CreateSvcCommand implements Runnable {
     @Inject
     BuildService buildService;
 
+    @Inject
+    LiquibaseChangelogService liquibase;
+
     @Override
     public void run() {
         try {
@@ -84,6 +88,9 @@ public class CreateSvcCommand implements Runnable {
             templates.renderToFile("templates/svc-project/Dockerfile.native.tpl", root.resolve("src/main/docker/Dockerfile.native"), ctx);
             templates.renderToFile("templates/svc-project/Chart.yaml.tpl", root.resolve("src/main/helm/Chart.yaml"), ctx);
             templates.renderToFile("templates/svc-project/values.yaml.tpl", root.resolve("src/main/helm/values.yaml"), ctx);
+            templates.renderToFile("templates/entity/Liquibase-changelog.xml.tpl", root.resolve("src/main/resources/db/changeLog.xml"), ctx);
+
+            Files.createDirectories(root.resolve("src/main/resources/db/changelog"));
 
             templates.renderToFile(
                     "templates/svc-project/openapi-skeleton.yaml.tpl",
@@ -95,6 +102,8 @@ public class CreateSvcCommand implements Runnable {
                     root.resolve("src/main/openapi/" + name + "-external-v1.yaml"),
                     ctx
             );
+
+            liquibase.ensureStructure(root);
 
             System.out.println("✔ Generated OneCX service: " + root);
             System.out.println("✔ Parent version: " + parentVersion);

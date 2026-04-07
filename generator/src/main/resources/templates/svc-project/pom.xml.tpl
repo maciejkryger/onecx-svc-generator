@@ -15,6 +15,10 @@
     <name>{{name}}</name>
     <description>{{name}} - OneCX Backend Service</description>
 
+    <properties>
+        <tkit.liquibase-plugin.version>1.17.0</tkit.liquibase-plugin.version>
+    </properties>
+
     <dependencies>
         <!-- OneCX / TKit -->
         <dependency>
@@ -177,4 +181,28 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>db-diff</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.tkit.maven</groupId>
+                        <artifactId>tkit-liquibase-plugin</artifactId>
+                        <version>${tkit.liquibase-plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <id>default</id>
+                                <goals>
+                                    <goal>diff</goal>
+                                </goals>
+                                <phase>compile</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

@@ -2,6 +2,7 @@ package org.tkit.onecx.onecxsvcgen.commands;
 
 import org.tkit.onecx.onecxsvcgen.model.EntityDef;
 import org.tkit.onecx.onecxsvcgen.service.BuildService;
+import org.tkit.onecx.onecxsvcgen.service.LiquibaseChangelogService;
 import org.tkit.onecx.onecxsvcgen.service.ModelParserService;
 import org.tkit.onecx.onecxsvcgen.service.NamingService;
 import org.tkit.onecx.onecxsvcgen.service.OpenApiService;
@@ -41,6 +42,15 @@ public class BatchModelCommand implements Runnable {
     )
     boolean build;
 
+    @Option(
+            names = "--liquibase-diff",
+            defaultValue = "false",
+            fallbackValue = "true",
+            arity = "0..1",
+            description = "Generate Liquibase changelog using Maven profile db-diff and import target/liquibase-diff-changeLog.xml"
+    )
+    boolean liquibaseDiff;
+
     @Inject
     ModelParserService models;
 
@@ -55,6 +65,9 @@ public class BatchModelCommand implements Runnable {
 
     @Inject
     BuildService buildService;
+
+    @Inject
+    LiquibaseChangelogService liquibase;
 
     @Override
     public void run() {
@@ -114,8 +127,6 @@ public class BatchModelCommand implements Runnable {
                 ctx.put("resourceOperationPlural", resourceOperationPlural);
                 ctx.put("tableName", models.tableName(entity));
                 ctx.put("entityImports", models.buildEntityImports(entityDef.fields()));
-                ctx.put("generatedInternalSearchCriteria", entity + "SearchCriteriaDTO");
-                ctx.put("relationMappingMethods", models.buildRelationMappingMethods(entityDef.relations(), pkg));
 
                 // INTERNAL contract bindings
                 ctx.put("resourceTag", internalTag);
@@ -123,6 +134,7 @@ public class BatchModelCommand implements Runnable {
                 ctx.put("generatedModelPackage", models.generatedInternalModelPackage(pkg));
                 ctx.put("generatedApiInterface", internalApiInterface);
                 ctx.put("generatedDto", entity + "DTO");
+                ctx.put("generatedInternalSearchCriteria", entity + "SearchCriteriaDTO");
 
                 // EXTERNAL contract bindings
                 ctx.put("generatedExternalApiPackage", models.generatedApiPackage(pkg));
@@ -145,6 +157,7 @@ public class BatchModelCommand implements Runnable {
                 ctx.put("relationsDecl", models.buildRelationsDecl(entityDef.relations(), pkg));
                 ctx.put("liquibaseColumns", models.buildLiquibaseColumns(entityDef.fields(), entityDef.relations()));
                 ctx.put("findByCriteriaPredicates", models.buildFindByCriteriaPredicates(entityDef.fields()));
+                ctx.put("relationMappingMethods", models.buildRelationMappingMethods(entityDef.relations(), pkg));
 
                 Path base = projectPath.resolve("src/main/java/" + pkg.replace('.', '/'));
                 Files.createDirectories(base.resolve("domain/models"));
@@ -154,7 +167,7 @@ public class BatchModelCommand implements Runnable {
                 Files.createDirectories(base.resolve("rs/internal/mappers"));
                 Files.createDirectories(base.resolve("rs/external/v1/controllers"));
                 Files.createDirectories(base.resolve("rs/external/v1/mappers"));
-                Files.createDirectories(projectPath.resolve("src/main/resources/db"));
+                Files.createDirectories(projectPath.resolve("src/main/resources/db/changelog"));
 
                 templates.renderToFile(
                         "templates/entity/Entity.java.tpl",
@@ -169,11 +182,6 @@ public class BatchModelCommand implements Runnable {
                 templates.renderToFile(
                         "templates/entity/Service.java.tpl",
                         base.resolve("domain/services/" + entity + "Service.java"),
-                        ctx
-                );
-                templates.renderToFile(
-                        "templates/entity/Liquibase-changelog.xml.tpl",
-                        projectPath.resolve("src/main/resources/db/changelog-" + entity.toLowerCase() + ".xml"),
                         ctx
                 );
 
@@ -218,9 +226,36 @@ public class BatchModelCommand implements Runnable {
             }
         }
 
+        liquibase.ensureStructure(projectPath);
+
+        String changelogFile = liquibase.hasIncludedChangelog(projectPath)
+                ? liquibase.batchFileName()
+                : liquibase.initialFileName();
+
+        if (!liquibaseDiff) {
+            Map<String, Object> changelogCtx = new HashMap<>();
+            changelogCtx.put("liquibaseChangeSets", models.buildLiquibaseChangeSets(entities));
+
+            templates.renderToFile(
+                    "templates/entity/Liquibase-changeset.xml.tpl",
+                    projectPath.resolve("src/main/resources/db/changelog/" + changelogFile),
+                    changelogCtx
+            );
+            liquibase.registerInclude(projectPath, changelogFile);
+        }
+
         System.out.println("✔ Generated " + entities.size() + " entities from model: " + modelFile);
 
-        if (build) {
+        if (liquibaseDiff) {
+            System.out.println("▶ Liquibase diff requested, generating changelog from db-diff profile...");
+            buildService.runLiquibaseDiff(projectPath);
+            liquibase.importDiffResult(projectPath, changelogFile);
+
+            if (build) {
+                System.out.println("▶ Build requested, starting Maven build...");
+                buildService.runMavenBuild(projectPath);
+            }
+        } else if (build) {
             System.out.println("▶ Build requested, starting Maven build...");
             buildService.runMavenBuild(projectPath);
         }

@@ -2,28 +2,41 @@ package org.tkit.onecx.onecxsvcgen.service;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @ApplicationScoped
 public class BuildService {
 
     public void runMavenBuild(Path projectPath) {
+        runMaven(projectPath, "clean", "package", "-DskipTests");
+    }
+
+    public void runLiquibaseDiff(Path projectPath) {
+        runMaven(projectPath, "clean", "compile", "-Pdb-diff", "-DskipTests");
+    }
+
+    private void runMaven(Path projectPath, String... args) {
         try {
             Path normalized = projectPath.toAbsolutePath().normalize();
 
-            List<String> command;
+            List<String> command = new ArrayList<>();
             Path mvnw = normalized.resolve("mvnw");
 
             if (Files.exists(mvnw)) {
-                command = List.of("./mvnw", "clean", "package", "-DskipTests");
+                command.add("./mvnw");
+                command.addAll(Arrays.asList(args));
             } else if (isWindows()) {
-                command = List.of("cmd", "/c", "mvn clean package -DskipTests");
+                command.add("cmd");
+                command.add("/c");
+                command.add("mvn " + String.join(" ", args));
             } else {
-                command = List.of("bash", "-lc", "mvn clean package -DskipTests");
+                command.add("bash");
+                command.add("-lc");
+                command.add("mvn " + String.join(" ", args));
             }
 
             System.out.println("▶ Running Maven build in: " + normalized);
@@ -31,24 +44,14 @@ public class BuildService {
 
             ProcessBuilder pb = new ProcessBuilder(command);
             pb.directory(normalized.toFile());
-            pb.redirectErrorStream(true);
+            pb.inheritIO();
 
             Process process = pb.start();
-
-            try (BufferedReader reader =
-                         new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    System.out.println(line);
-                }
-            }
-
             int exit = process.waitFor();
+
             if (exit != 0) {
                 throw new RuntimeException("Maven build failed with exit code: " + exit);
             }
-
-            System.out.println("✔ Maven build finished successfully");
         } catch (Exception e) {
             throw new RuntimeException("Failed to run Maven build in: " + projectPath, e);
         }

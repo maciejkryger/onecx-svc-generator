@@ -394,4 +394,33 @@ public class ModelParserService {
 
         return sb.toString();
     }
+
+    public String buildLiquibaseChangeSet(String entity, List<FieldDef> fields, List<RelationDef> relations) {
+        String tableName = tableName(entity);
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("    <changeSet id=\"create-").append(tableName).append("\" author=\"onecx-svc-generator\">\n");
+        sb.append("        <createTable tableName=\"").append(tableName).append("\">\n");
+        sb.append("            <column name=\"id\" type=\"VARCHAR(36)\">\n");
+        sb.append("                <constraints primaryKey=\"true\" primaryKeyName=\"pk_").append(tableName).append("\" nullable=\"false\"/>\n");
+        sb.append("            </column>\n");
+        sb.append("            <column name=\"tenant\" type=\"VARCHAR(255)\"/>\n");
+        sb.append("            <column name=\"creation_user\" type=\"VARCHAR(255)\"/>\n");
+        sb.append("            <column name=\"creation_date\" type=\"TIMESTAMP\"/>\n");
+        sb.append("            <column name=\"modification_user\" type=\"VARCHAR(255)\"/>\n");
+        sb.append("            <column name=\"modification_date\" type=\"TIMESTAMP\"/>\n");
+        sb.append(buildLiquibaseColumns(fields, relations));
+        sb.append("        </createTable>\n");
+        sb.append("    </changeSet>\n");
+
+        return sb.toString();
+    }
+
+    public String buildLiquibaseChangeSets(List<EntityDef> entities) {
+        StringBuilder sb = new StringBuilder();
+        for (EntityDef entity : entities) {
+            sb.append(buildLiquibaseChangeSet(entity.name(), entity.fields(), entity.relations())).append("\n");
+        }
+        return sb.toString();
+    }
 }

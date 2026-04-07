@@ -6,4 +6,5 @@
            http://www.liquibase.org/xml/ns/dbchangelog
            https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
+{{liquibaseChangeSets}}
 </databaseChangeLog>

@@ -4,6 +4,7 @@ import org.tkit.onecx.onecxsvcgen.model.ApiDef;
 import org.tkit.onecx.onecxsvcgen.model.FieldDef;
 import org.tkit.onecx.onecxsvcgen.model.RelationDef;
 import org.tkit.onecx.onecxsvcgen.service.BuildService;
+import org.tkit.onecx.onecxsvcgen.service.LiquibaseChangelogService;
 import org.tkit.onecx.onecxsvcgen.service.ModelParserService;
 import org.tkit.onecx.onecxsvcgen.service.NamingService;
 import org.tkit.onecx.onecxsvcgen.service.OpenApiService;
@@ -78,6 +79,15 @@ public class AddEntityCommand implements Runnable {
     )
     boolean build;
 
+    @Option(
+            names = "--liquibase-diff",
+            defaultValue = "false",
+            fallbackValue = "true",
+            arity = "0..1",
+            description = "Generate Liquibase changelog using Maven profile db-diff and import target/liquibase-diff-changeLog.xml"
+    )
+    boolean liquibaseDiff;
+
     @Inject
     TemplateService templates;
 
@@ -92,6 +102,9 @@ public class AddEntityCommand implements Runnable {
 
     @Inject
     BuildService buildService;
+
+    @Inject
+    LiquibaseChangelogService liquibase;
 
     @Override
     public void run() {
@@ -145,30 +158,34 @@ public class AddEntityCommand implements Runnable {
             ctx.put("entityImports", models.buildEntityImports(fields));
 
             // INTERNAL contract bindings
-            ctx.put("controllerPackage", models.controllerPackage(pkg));
-            ctx.put("mapperPackage", models.mapperPackage(pkg));
             ctx.put("resourceTag", internalTag);
             ctx.put("generatedApiPackage", models.generatedInternalApiPackage(pkg));
             ctx.put("generatedModelPackage", models.generatedInternalModelPackage(pkg));
             ctx.put("generatedApiInterface", internalApiInterface);
             ctx.put("generatedDto", entity + "DTO");
+            ctx.put("generatedInternalSearchCriteria", entity + "SearchCriteriaDTO");
 
-            // EXTERNAL placeholders for future split if needed
-            ctx.put("externalControllerPackage", models.externalControllerPackage(pkg));
-            ctx.put("externalMapperPackage", models.externalMapperPackage(pkg));
+            // EXTERNAL contract bindings
             ctx.put("generatedExternalApiPackage", models.generatedApiPackage(pkg));
             ctx.put("generatedExternalModelPackage", models.generatedModelPackage(pkg));
-            ctx.put("generatedExternalDto", entity + "DTOV1");
             ctx.put("generatedExternalApiInterface", externalApiInterface);
+            ctx.put("generatedExternalDto", entity + "DTOV1");
+            ctx.put("generatedExternalSearchCriteria", entity + "SearchCriteriaDTOV1");
 
             ctx.put("modelPackage", models.modelPackage(pkg));
             ctx.put("daoPackage", models.daoPackage(pkg));
             ctx.put("domainServicePackage", models.domainServicePackage(pkg));
+
+            ctx.put("controllerPackage", models.controllerPackage(pkg));
+            ctx.put("mapperPackage", models.mapperPackage(pkg));
+
+            ctx.put("externalControllerPackage", models.externalControllerPackage(pkg));
+            ctx.put("externalMapperPackage", models.externalMapperPackage(pkg));
+
             ctx.put("fieldsDecl", models.buildFieldsDecl(fields));
             ctx.put("relationsDecl", models.buildRelationsDecl(relations, pkg));
             ctx.put("liquibaseColumns", models.buildLiquibaseColumns(fields, relations));
             ctx.put("findByCriteriaPredicates", models.buildFindByCriteriaPredicates(fields));
-            ctx.put("generatedInternalSearchCriteria", entity + "SearchCriteriaDTO");
             ctx.put("relationMappingMethods", models.buildRelationMappingMethods(relations, pkg));
 
             Path base = projectPath.resolve("src/main/java/" + pkg.replace('.', '/'));
@@ -179,7 +196,7 @@ public class AddEntityCommand implements Runnable {
             Files.createDirectories(base.resolve("rs/internal/mappers"));
             Files.createDirectories(base.resolve("rs/external/v1/controllers"));
             Files.createDirectories(base.resolve("rs/external/v1/mappers"));
-            Files.createDirectories(projectPath.resolve("src/main/resources/db"));
+            Files.createDirectories(projectPath.resolve("src/main/resources/db/changelog"));
 
             templates.renderToFile(
                     "templates/entity/Entity.java.tpl",
@@ -196,11 +213,8 @@ public class AddEntityCommand implements Runnable {
                     base.resolve("domain/services/" + entity + "Service.java"),
                     ctx
             );
-            templates.renderToFile(
-                    "templates/entity/Liquibase-changelog.xml.tpl",
-                    projectPath.resolve("src/main/resources/db/changelog-" + entity.toLowerCase() + ".xml"),
-                    ctx
-            );
+
+            // INTERNAL runtime boundary
             templates.renderToFile(
                     "templates/entity/Mapper.java.tpl",
                     base.resolve("rs/internal/mappers/" + entity + "Mapper.java"),
@@ -212,20 +226,12 @@ public class AddEntityCommand implements Runnable {
                     ctx
             );
 
-                        if (root) {
-                templates.renderToFile(
-                        "templates/entity/Controller.java.tpl",
-                        base.resolve("rs/internal/controllers/" + entity + "Controller.java"),
-                        ctx
-                );
-            }
-
+            // EXTERNAL runtime boundary
             templates.renderToFile(
                     "templates/entity/ExternalMapper.java.tpl",
                     base.resolve("rs/external/v1/mappers/" + entity + "Mapper.java"),
                     ctx
             );
-
             templates.renderToFile(
                     "templates/entity/ExternalExceptionMapper.java.tpl",
                     base.resolve("rs/external/v1/mappers/ExceptionMapper.java"),
@@ -234,15 +240,36 @@ public class AddEntityCommand implements Runnable {
 
             if (root) {
                 templates.renderToFile(
+                        "templates/entity/Controller.java.tpl",
+                        base.resolve("rs/internal/controllers/" + entity + "Controller.java"),
+                        ctx
+                );
+                templates.renderToFile(
                         "templates/entity/ExternalController.java.tpl",
                         base.resolve("rs/external/v1/controllers/" + entity + "Controller.java"),
                         ctx
                 );
             }
 
+            liquibase.ensureStructure(projectPath);
+
+            String changelogFile = liquibase.entityFileName(entity);
+
+            if (!liquibaseDiff) {
+                Map<String, Object> changelogCtx = new HashMap<>();
+                changelogCtx.put("liquibaseChangeSets", models.buildLiquibaseChangeSet(entity, fields, relations));
+
+                templates.renderToFile(
+                        "templates/entity/Liquibase-changeset.xml.tpl",
+                        projectPath.resolve("src/main/resources/db/changelog/" + changelogFile),
+                        changelogCtx
+                );
+                liquibase.registerInclude(projectPath, changelogFile);
+            }
+
             System.out.println("✔ Generated domain layer for: " + entity);
             if (root) {
-                System.out.println("✔ Updated internal API (CRUD + search) and external-v1 API (get + search) for: " + entity);
+                System.out.println("✔ Updated internal API/runtime (CRUD + search) and external-v1 API/runtime (get + search) for: " + entity);
             } else {
                 System.out.println(
                         "✔ Added component schema " + entity + " to parent API " + apiParent
@@ -250,7 +277,17 @@ public class AddEntityCommand implements Runnable {
                 );
             }
 
-            if (build) {
+            if (liquibaseDiff) {
+                System.out.println("▶ Liquibase diff requested, generating changelog from db-diff profile...");
+                buildService.runLiquibaseDiff(projectPath);
+                liquibase.importDiffResult(projectPath, changelogFile);
+
+                if (build) {
+                    System.out.println("▶ Build requested, starting Maven build...");
+                    buildService.runMavenBuild(projectPath);
+                }
+            } else if (build) {
+                System.out.println("▶ Build requested, starting Maven build...");
                 buildService.runMavenBuild(projectPath);
             }
         } catch (Exception e) {
