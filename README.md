@@ -96,6 +96,17 @@ java -jar onecx-svc-generator/generator/target/onecx-svc-generator-1.0.0-runner.
   --build true
 ``` 
 
+#### with Liquibase diff generation for existing entities - generates changelog with missing tables/columns based on the model definition:
+```bash
+cd ../
+java -jar onecx-svc-generator/generator/target/onecx-svc-generator-1.0.0-runner.jar batch-model \
+  --project /home/Maciej/projects/onecx/onecx-demo-svc \
+  --package org.tkit.onecx.demo \
+  --model /home/Maciej/projects/onecx/onecx-svc-generator/generator/examples/model.yaml \
+  --liquibase-diff true \
+  --build true
+``` 
+
 ### 6. Build the generated service
 ```bash
 cd ../onecx-demo-svc
