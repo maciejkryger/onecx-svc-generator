@@ -188,6 +188,11 @@ public class AddEntityCommand implements Runnable {
             ctx.put("findByCriteriaPredicates", models.buildFindByCriteriaPredicates(fields));
             ctx.put("relationMappingMethods", models.buildRelationMappingMethods(relations, pkg));
 
+            ctx.put("serviceRelationImports", models.buildServiceRelationImports(relations, pkg));
+            ctx.put("relationDaoInjections", models.buildRelationDaoInjections(relations));
+            ctx.put("relationCreateResolvers", models.buildRelationCreateResolvers(relations));
+            ctx.put("relationUpdateResolvers", models.buildRelationUpdateResolvers(relations));
+
             Path base = projectPath.resolve("src/main/java/" + pkg.replace('.', '/'));
             Files.createDirectories(base.resolve("domain/models"));
             Files.createDirectories(base.resolve("domain/daos"));

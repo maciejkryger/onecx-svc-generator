@@ -159,6 +159,11 @@ public class BatchModelCommand implements Runnable {
                 ctx.put("findByCriteriaPredicates", models.buildFindByCriteriaPredicates(entityDef.fields()));
                 ctx.put("relationMappingMethods", models.buildRelationMappingMethods(entityDef.relations(), pkg));
 
+                ctx.put("serviceRelationImports", models.buildServiceRelationImports(entityDef.relations(), pkg));
+                ctx.put("relationDaoInjections", models.buildRelationDaoInjections(entityDef.relations()));
+                ctx.put("relationCreateResolvers", models.buildRelationCreateResolvers(entityDef.relations()));
+                ctx.put("relationUpdateResolvers", models.buildRelationUpdateResolvers(entityDef.relations()));
+
                 Path base = projectPath.resolve("src/main/java/" + pkg.replace('.', '/'));
                 Files.createDirectories(base.resolve("domain/models"));
                 Files.createDirectories(base.resolve("domain/daos"));

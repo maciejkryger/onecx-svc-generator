@@ -1,7 +1,7 @@
 package {{domainServicePackage}};
 
 import {{daoPackage}}.{{entity}}DAO;
-import {{generatedModelPackage}}.{{entity}}SearchCriteriaDTO;
+{{serviceRelationImports}}import {{generatedModelPackage}}.{{entity}}SearchCriteriaDTO;
 import {{generatedModelPackage}}.{{generatedDto}};
 import {{mapperPackage}}.{{entity}}Mapper;
 import {{modelPackage}}.{{entity}};
@@ -21,6 +21,7 @@ public class {{entity}}Service {
     @Inject
     {{entity}}Mapper mapper;
 
+{{relationDaoInjections}}
     public List<{{entity}}> findByCriteria({{entity}}SearchCriteriaDTO criteria, Integer offset, Integer limit) {
         return dao.findByCriteria(criteria, offset, limit);
     }
@@ -36,7 +37,7 @@ public class {{entity}}Service {
     @Transactional
     public {{entity}} create({{generatedDto}} dto) {
         {{entity}} entity = mapper.fromDto(dto);
-        dao.create(entity);
+{{relationCreateResolvers}}        dao.create(entity);
         return entity;
     }
 
@@ -44,7 +45,7 @@ public class {{entity}}Service {
     public {{entity}} update(String id, {{generatedDto}} dto) {
         {{entity}} entity = findById(id);
         mapper.update(dto, entity);
-        return dao.update(entity);
+{{relationUpdateResolvers}}        return dao.update(entity);
     }
 
     @Transactional
