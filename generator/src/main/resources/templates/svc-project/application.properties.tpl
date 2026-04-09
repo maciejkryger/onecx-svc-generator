@@ -16,6 +16,8 @@ quarkus.http.auth.permission.default.policy=authenticated
 %dev.quarkus.oidc.tenant-enabled=false
 %dev.onecx.permissions.allow-all=true
 %dev.quarkus.otel.sdk.disabled=true
+%dev.quarkus.oidc-client.discovery-enabled=false
+%dev.tkit.security.auth.enabled=false
 
 # --- quarkus ---
 quarkus.banner.enabled=false
