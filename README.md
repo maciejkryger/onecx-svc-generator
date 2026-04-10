@@ -125,9 +125,10 @@ mvn quarkus:dev
 http://localhost:8080/q/dev-ui/welcome
 
 ### 3.9. Test locally example model endpoints with curl or Postman:
-#### a. internal api:
 
-##### create product with category
+### a. internal api:
+
+#### - create product with category
 curl -X POST \
   http://localhost:8080/internal/products \
   -H 'Content-Type: application/json' \
@@ -140,12 +141,12 @@ curl -X POST \
     }
   }'
 
-##### get product by id
+#### - get product by id
 curl -X GET \
   http://localhost:8080/internal/products/p1a2b3c4-e222-4f66-bbbb-987654321000 \
   -H 'Accept: application/json'
 
-##### search products by name
+#### - search products by name
 curl -X POST \
   'http://localhost:8080/internal/products/search?limit=20&offset=0' \
   -H 'Content-Type: application/json' \
@@ -154,26 +155,25 @@ curl -X POST \
     "name": "Laptop"
   }'
 
-##### delete product by id
+#### - delete product by id
 curl -X DELETE \
   http://localhost:8080/internal/products/p1a2b3c4-e222-4f66-bbbb-987654321000 \
   -H 'Accept: application/json'
 
 
+### b. external API:
 
-#### b. external API:
-
-##### get product by id
+#### - get product by id
 curl --request GET \
   --url http://localhost:8080/v1/products/123e4567-e89b-12d3-a456-426614174000 \
   --header 'Accept: application/json'
 
-##### search products with pagination
+#### - search products with pagination
 curl --request POST \
 --url 'http://localhost:8080/v1/products/search?limit=20&offset=0' \
 --header 'Accept: application/json'
 
-##### search products by name only
+#### - search products by name only
 curl --request POST \
   --url 'http://localhost:8080/v1/products/search?limit=20&offset=0' \
   --header 'Accept: application/json' \
@@ -182,7 +182,7 @@ curl --request POST \
     "name": "prod"
   }'
 
-##### search products by name and price
+#### - search products by name and price
 curl --request POST \
 --url 'http://localhost:8080/v1/products/search?limit=20&offset=0' \
 --header 'Accept: application/json' \
