@@ -193,14 +193,15 @@ curl --request POST \
 }'
 
 
-Do **not** commit the built JAR to the repository root.
-Recommended flow:
+### 3.10. Do **not** commit the built JAR to the repository root.
+
+## 4. Recommended flow:
 
 1. build the generator JAR locally,
 2. publish it as a GitHub Release asset,
 3. run it via the JBang launcher from the repo catalog.
 
-After a release is published:
+## 5. After a release is published:
 ```bash
 jbang onecx-svc-generator@maciejkryger/onecx-svc-generator create-svc --name onecx-demo-svc --group org.tkit.onecx --package org.tkit.onecx.demo
 ```
