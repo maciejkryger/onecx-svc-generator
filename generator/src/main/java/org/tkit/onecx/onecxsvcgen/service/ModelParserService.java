@@ -334,6 +334,7 @@ public class ModelParserService {
                 continue;
             }
 
+            sb.append("    @Mapping(target = \"id\", ignore = true)\n");
             sb.append("    @Mapping(target = \"tenant\", ignore = true)\n");
             sb.append("    @Mapping(target = \"creationDate\", ignore = true)\n");
             sb.append("    @Mapping(target = \"creationUser\", ignore = true)\n");
@@ -347,6 +348,7 @@ public class ModelParserService {
                     .append(" fromDto(")
                     .append(generatedModelPackage).append(".").append(target).append("DTO dto);\n\n");
 
+            sb.append("    @Mapping(target = \"id\", ignore = true)\n");
             sb.append("    @Mapping(target = \"tenant\", ignore = true)\n");
             sb.append("    @Mapping(target = \"creationDate\", ignore = true)\n");
             sb.append("    @Mapping(target = \"creationUser\", ignore = true)\n");

@@ -71,6 +71,7 @@ public class CreateSvcCommand implements Runnable {
 
             Map<String, Object> ctx = new HashMap<>();
             ctx.put("name", name);
+            ctx.put("dbName", name.replace("-", "_"));
             ctx.put("group", group);
             ctx.put("package", pkg);
             ctx.put("parentVersion", parentVersion);
