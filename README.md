@@ -46,7 +46,10 @@ mvn clean package -Dquarkus.package.type=uber-jar
 ### 3.2. Generate a new service
 ```bash
 cd ../
-java -jar onecx-svc-generator/generator/target/onecx-svc-generator-1.0.0-runner.jar create-svc   --name onecx-demo-svc   --group org.tkit.onecx   --package org.tkit.onecx.demo
+java -jar onecx-svc-generator/generator/target/onecx-svc-generator-1.0.0-runner.jar create-svc   \
+  --name onecx-demo-svc   \
+  --group org.tkit.onecx   \
+  --package org.tkit.onecx.demo
 ```
 #### with autobuild - recomended for development, as it compiles the generated code after each change:
 ```bash 
@@ -203,5 +206,8 @@ curl --request POST \
 
 ## 5. After a release is published:
 ```bash
-jbang onecx-svc-generator@maciejkryger/onecx-svc-generator create-svc --name onecx-demo-svc --group org.tkit.onecx --package org.tkit.onecx.demo
+jbang onecx-svc-generator@maciejkryger/onecx-svc-generator create-svc \
+  --name onecx-demo-svc \
+  --group org.tkit.onecx \
+  --package org.tkit.onecx.demo
 ```
