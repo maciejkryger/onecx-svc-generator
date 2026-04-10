@@ -211,3 +211,40 @@ jbang onecx-svc-generator@maciejkryger/onecx-svc-generator create-svc \
   --group org.tkit.onecx \
   --package org.tkit.onecx.demo
 ```
+## 6. Appeared issues 
+
+### during CreateSvcCommand
+
+[INFO] --- quarkus:3.27.1:build (default) @ onecx-demo2-svc ---
+java.lang.RuntimeException: create-svc failed
+at org.tkit.onecx.onecxsvcgen.commands.CreateSvcCommand.run(CreateSvcCommand.java:118)
+at picocli.CommandLine.executeUserObject(CommandLine.java:2045)
+at picocli.CommandLine.access$1500(CommandLine.java:148)
+at picocli.CommandLine$RunLast.executeUserObjectOfLastSubcommandWithSameParent(CommandLine.java:2469)
+at picocli.CommandLine$RunLast.handle(CommandLine.java:2461)
+at picocli.CommandLine$RunLast.handle(CommandLine.java:2423)
+at picocli.CommandLine$AbstractParseResultHandler.execute(CommandLine.java:2277)
+at picocli.CommandLine$RunLast.execute(CommandLine.java:2425)
+at io.quarkus.picocli.runtime.PicocliRunner$EventExecutionStrategy.execute(PicocliRunner.java:26)
+at picocli.CommandLine.execute(CommandLine.java:2174)
+at io.quarkus.picocli.runtime.PicocliRunner.run(PicocliRunner.java:40)
+at io.quarkus.runtime.ApplicationLifecycleManager.run(ApplicationLifecycleManager.java:149)
+at io.quarkus.runtime.Quarkus.run(Quarkus.java:79)
+at io.quarkus.runtime.Quarkus.run(Quarkus.java:50)
+at io.quarkus.runner.GeneratedMain.main(Unknown Source)
+Caused by: java.lang.RuntimeException: Failed to run Maven build in: /home/Maciej/projects/onecx/onecx-demo2-svc
+at org.tkit.onecx.onecxsvcgen.service.BuildService.runMaven(BuildService.java:56)
+at org.tkit.onecx.onecxsvcgen.service.BuildService.runMavenBuild(BuildService.java:15)
+at org.tkit.onecx.onecxsvcgen.service.BuildService_ClientProxy.runMavenBuild(Unknown Source)
+at org.tkit.onecx.onecxsvcgen.commands.CreateSvcCommand.run(CreateSvcCommand.java:115)
+... 14 more
+Caused by: java.lang.RuntimeException: Maven build failed with exit code: 137
+at org.tkit.onecx.onecxsvcgen.service.BuildService.runMaven(BuildService.java:53)
+... 17 more
+2026-04-10 13:18:13,732 INFO  [io.quarkus] (main) onecx-svc-generator stopped in 0.026s
+
+reason: build was killed by out of memory/memory limit in WSL, tested on machine with 32GM RAM, running WSL, Docker with running containers and remote screen sharing during Teams meeting,
+after meeting it started to work, I built it again manually by command:
+```bash
+mvn clean package -DskipTests -e
+```
