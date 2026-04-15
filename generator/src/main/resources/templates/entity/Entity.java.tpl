@@ -14,6 +14,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 import org.tkit.quarkus.jpa.models.TraceableEntity;
+import org.hibernate.annotations.TenantId;
 
 @Entity
 @Table(name = "{{tableName}}")

@@ -22,8 +22,8 @@ public class {{entity}}Service {
     {{entity}}Mapper mapper;
 
 {{relationDaoInjections}}
-    public List<{{entity}}> findByCriteria({{entity}}SearchCriteriaDTO criteria, Integer offset, Integer limit) {
-        return dao.findByCriteria(criteria, offset, limit);
+    public List<{{entity}}> findByCriteria({{entity}}SearchCriteriaDTO criteria) {
+        return dao.findByCriteria(criteria);
     }
 
     public {{entity}} findById(String id) {

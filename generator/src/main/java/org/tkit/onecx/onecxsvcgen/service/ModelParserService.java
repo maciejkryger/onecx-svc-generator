@@ -251,7 +251,7 @@ public class ModelParserService {
         sb.append("            <column name=\"OPTLOCK\" type=\"BIGINT\"/>\n");
 
         // local inherited/business field used in generated entities
-        sb.append("            <column name=\"tenant\" type=\"VARCHAR(255)\"/>\n");
+        sb.append("            <column name=\"tenantId\" type=\"VARCHAR(255)\"/>\n");
 
         sb.append(buildLiquibaseColumns(fields, relations));
         sb.append("        </createTable>\n");
@@ -335,7 +335,7 @@ public class ModelParserService {
             }
 
             sb.append("    @Mapping(target = \"id\", ignore = true)\n");
-            sb.append("    @Mapping(target = \"tenant\", ignore = true)\n");
+            sb.append("    @Mapping(target = \"tenantId\", ignore = true)\n");
             sb.append("    @Mapping(target = \"creationDate\", ignore = true)\n");
             sb.append("    @Mapping(target = \"creationUser\", ignore = true)\n");
             sb.append("    @Mapping(target = \"modificationDate\", ignore = true)\n");
@@ -349,7 +349,7 @@ public class ModelParserService {
                     .append(generatedModelPackage).append(".").append(target).append("DTO dto);\n\n");
 
             sb.append("    @Mapping(target = \"id\", ignore = true)\n");
-            sb.append("    @Mapping(target = \"tenant\", ignore = true)\n");
+            sb.append("    @Mapping(target = \"tenantId\", ignore = true)\n");
             sb.append("    @Mapping(target = \"creationDate\", ignore = true)\n");
             sb.append("    @Mapping(target = \"creationUser\", ignore = true)\n");
             sb.append("    @Mapping(target = \"modificationDate\", ignore = true)\n");

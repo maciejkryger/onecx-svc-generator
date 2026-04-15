@@ -10,9 +10,9 @@ import {{domainServicePackage}}.{{entity}}Service;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.persistence.OptimisticLockException;
 import jakarta.transaction.Transactional;
 import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Valid;
 import jakarta.ws.rs.core.Response;
 
 import org.jboss.resteasy.reactive.RestResponse;
@@ -41,12 +41,10 @@ public class {{entity}}Controller implements {{generatedExternalApiInterface}} {
 
     @Override
     public Response search{{resourceOperationPlural}}(
-            Integer limit,
-            Integer offset,
-            {{generatedExternalSearchCriteria}} criteria) {
+            @Valid {{generatedExternalSearchCriteria}} criteria) {
 
         List<{{generatedExternalDto}}> result = service
-                .findByCriteria(mapper.toCriteria(criteria), offset, limit)
+                .findByCriteria(mapper.toCriteria(criteria))
                 .stream()
                 .map(mapper::toDto)
                 .toList();
@@ -62,10 +60,5 @@ public class {{entity}}Controller implements {{generatedExternalApiInterface}} {
     @ServerExceptionMapper
     public RestResponse<ProblemDetailResponseDTOV1> constraint(ConstraintViolationException ex) {
         return exceptionMapper.constraint(ex);
-    }
-
-    @ServerExceptionMapper
-    public RestResponse<ProblemDetailResponseDTOV1> daoException(OptimisticLockException ex) {
-        return exceptionMapper.optimisticLock(ex);
     }
 }

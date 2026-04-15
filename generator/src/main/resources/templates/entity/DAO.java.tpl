@@ -16,7 +16,7 @@ import java.util.List;
 @ApplicationScoped
 public class {{entity}}DAO extends AbstractDAO<{{entity}}> {
 
-    public List<{{entity}}> findByCriteria({{entity}}SearchCriteriaDTO criteria, Integer offset, Integer limit) {
+    public List<{{entity}}> findByCriteria({{entity}}SearchCriteriaDTO criteria) {
         CriteriaBuilder cb = getEntityManager().getCriteriaBuilder();
         CriteriaQuery<{{entity}}> cq = cb.createQuery({{entity}}.class);
         Root<{{entity}}> root = cq.from({{entity}}.class);
@@ -31,12 +31,23 @@ public class {{entity}}DAO extends AbstractDAO<{{entity}}> {
 
         TypedQuery<{{entity}}> query = getEntityManager().createQuery(cq);
 
-        if (offset != null && offset >= 0) {
-            query.setFirstResult(offset);
+        int pageNumber = criteria.getPageNumber() != null ? criteria.getPageNumber() : 0;
+        int pageSize = criteria.getPageSize() != null ? criteria.getPageSize() : 100;
+
+        if (pageNumber < 0) {
+            pageNumber = 0;
         }
-        if (limit != null && limit > 0) {
-            query.setMaxResults(limit);
+        if (pageSize <= 0) {
+            pageSize = 100;
         }
+        if (pageSize > 1000) {
+            pageSize = 1000;
+        }
+
+        int offset = pageNumber * pageSize;
+
+        query.setFirstResult(offset);
+        query.setMaxResults(pageSize);
 
         return query.getResultList();
     }

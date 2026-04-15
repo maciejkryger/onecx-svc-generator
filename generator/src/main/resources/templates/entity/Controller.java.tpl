@@ -12,6 +12,7 @@ import jakarta.inject.Inject;
 import jakarta.persistence.OptimisticLockException;
 import jakarta.transaction.Transactional;
 import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Valid;
 import jakarta.ws.rs.core.Response;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
@@ -58,16 +59,9 @@ public class {{entity}}Controller implements {{generatedApiInterface}} {
     }
 
     @Override
-    public Response search{{resourceOperationPlural}}(Integer limit, Integer offset, {{entity}}SearchCriteriaDTO criteria) {
-        List<{{generatedDto}}> result = service.findByCriteria(criteria, offset, limit)
-                .stream()
-                .map(mapper::toDto)
-                .toList();
-        return Response.ok(result).build();
-    }
-
-    public Response search{{resourceOperationPlural}}({{entity}}SearchCriteriaDTO criteria, Integer limit, Integer offset) {
-        List<{{generatedDto}}> result = service.findByCriteria(criteria, offset, limit)
+    public Response search{{resourceOperationPlural}}(
+            @Valid {{entity}}SearchCriteriaDTO criteria) {
+        List<{{generatedDto}}> result = service.findByCriteria(criteria)
                 .stream()
                 .map(mapper::toDto)
                 .toList();

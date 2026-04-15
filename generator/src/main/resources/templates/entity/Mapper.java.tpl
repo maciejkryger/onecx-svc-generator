@@ -13,7 +13,7 @@ public interface {{entity}}Mapper {
     {{generatedDto}} toDto({{entity}} entity);
 
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "tenant", ignore = true)
+    @Mapping(target = "tenantId", ignore = true)
     @Mapping(target = "creationDate", ignore = true)
     @Mapping(target = "creationUser", ignore = true)
     @Mapping(target = "modificationDate", ignore = true)
@@ -24,7 +24,7 @@ public interface {{entity}}Mapper {
     {{entity}} fromDto({{generatedDto}} dto);
 
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "tenant", ignore = true)
+    @Mapping(target = "tenantId", ignore = true)
     @Mapping(target = "creationDate", ignore = true)
     @Mapping(target = "creationUser", ignore = true)
     @Mapping(target = "modificationDate", ignore = true)
