@@ -122,6 +122,32 @@ public class OpenApiService {
     }
 
     @SuppressWarnings("unchecked")
+    private void patchParentSchema(Map<String, Object> spec,
+                                   String parent,
+                                   String field,
+                                   boolean collection,
+                                   String childSchemaName) {
+        Map<String, Object> components =
+                (Map<String, Object>) spec.computeIfAbsent("components", k -> new LinkedHashMap<>());
+        Map<String, Object> schemas =
+                (Map<String, Object>) components.computeIfAbsent("schemas", k -> new LinkedHashMap<>());
+
+        Map<String, Object> parentSchema =
+                (Map<String, Object>) schemas.computeIfAbsent(parent, k -> createEmptySchema());
+        Map<String, Object> parentProperties =
+                (Map<String, Object>) parentSchema.computeIfAbsent("properties", k -> new LinkedHashMap<>());
+
+        if (collection) {
+            Map<String, Object> array = new LinkedHashMap<>();
+            array.put("type", "array");
+            array.put("items", Map.of("$ref", "#/components/schemas/" + childSchemaName));
+            parentProperties.put(field, array);
+        } else {
+            parentProperties.put(field, Map.of("$ref", "#/components/schemas/" + childSchemaName));
+        }
+    }
+
+    @SuppressWarnings("unchecked")
     private void createInternalPaths(Map<String, Object> spec,
                                      String resourcePath,
                                      String tag,
