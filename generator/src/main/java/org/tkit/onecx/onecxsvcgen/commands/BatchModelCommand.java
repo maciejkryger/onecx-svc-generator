@@ -165,14 +165,10 @@ public class BatchModelCommand implements Runnable {
                 ctx.put("relationUpdateResolvers", models.buildRelationUpdateResolvers(entityDef.relations()));
 
                 Path base = projectPath.resolve("src/main/java/" + pkg.replace('.', '/'));
-                Files.createDirectories(base.resolve("domain/models"));
-                Files.createDirectories(base.resolve("domain/daos"));
-                Files.createDirectories(base.resolve("domain/services"));
-                Files.createDirectories(base.resolve("rs/internal/controllers"));
-                Files.createDirectories(base.resolve("rs/internal/mappers"));
-                Files.createDirectories(base.resolve("rs/external/v1/controllers"));
-                Files.createDirectories(base.resolve("rs/external/v1/mappers"));
-                Files.createDirectories(projectPath.resolve("src/main/resources/db/changelog"));
+                Path testBase = projectPath.resolve("src/test/java/" + pkg.replace('.', '/'));
+
+                ensureMainStructure(base, projectPath);
+                ensureTestStructure(testBase, projectPath);
 
                 templates.renderToFile(
                         "templates/entity/Entity.java.tpl",
@@ -226,6 +222,41 @@ public class BatchModelCommand implements Runnable {
                             ctx
                     );
                 }
+
+                // TEST skeletons - only create if missing
+                renderIfMissing(
+                        "templates/test/ServiceTest.java.tpl",
+                        testBase.resolve("domain/services/" + entity + "ServiceTest.java"),
+                        ctx
+                );
+                renderIfMissing(
+                        "templates/test/DAOTest.java.tpl",
+                        testBase.resolve("domain/daos/" + entity + "DAOTest.java"),
+                        ctx
+                );
+                renderIfMissing(
+                        "templates/test/MapperTest.java.tpl",
+                        testBase.resolve("rs/internal/mappers/" + entity + "MapperTest.java"),
+                        ctx
+                );
+                renderIfMissing(
+                        "templates/test/ExternalMapperTest.java.tpl",
+                        testBase.resolve("rs/external/v1/mappers/" + entity + "MapperTest.java"),
+                        ctx
+                );
+
+                if (entityDef.api().expose()) {
+                    renderIfMissing(
+                            "templates/test/ControllerTest.java.tpl",
+                            testBase.resolve("rs/internal/controllers/" + entity + "ControllerTest.java"),
+                            ctx
+                    );
+                    renderIfMissing(
+                            "templates/test/ExternalControllerTest.java.tpl",
+                            testBase.resolve("rs/external/v1/controllers/" + entity + "ControllerTest.java"),
+                            ctx
+                    );
+                }
             } catch (Exception e) {
                 throw new RuntimeException("batch-model failed while generating entity: " + entityDef.name(), e);
             }
@@ -250,6 +281,7 @@ public class BatchModelCommand implements Runnable {
         }
 
         System.out.println("✔ Generated " + entities.size() + " entities from model: " + modelFile);
+        System.out.println("✔ Test skeletons generated for entities (if missing)");
 
         if (liquibaseDiff) {
             System.out.println("▶ Liquibase diff requested, generating changelog from db-diff profile...");
@@ -263,6 +295,41 @@ public class BatchModelCommand implements Runnable {
         } else if (build) {
             System.out.println("▶ Build requested, starting Maven build...");
             buildService.runMavenBuild(projectPath);
+        }
+    }
+
+    private void ensureMainStructure(Path base, Path projectPath) throws Exception {
+        Files.createDirectories(base.resolve("domain/models"));
+        Files.createDirectories(base.resolve("domain/daos"));
+        Files.createDirectories(base.resolve("domain/services"));
+        Files.createDirectories(base.resolve("rs/internal/controllers"));
+        Files.createDirectories(base.resolve("rs/internal/mappers"));
+        Files.createDirectories(base.resolve("rs/external/v1/controllers"));
+        Files.createDirectories(base.resolve("rs/external/v1/mappers"));
+        Files.createDirectories(projectPath.resolve("src/main/resources/db/changelog"));
+    }
+
+    private void ensureTestStructure(Path testBase, Path projectPath) throws Exception {
+        Files.createDirectories(testBase.resolve("domain/daos"));
+        Files.createDirectories(testBase.resolve("domain/services"));
+        Files.createDirectories(testBase.resolve("rs/internal/controllers"));
+        Files.createDirectories(testBase.resolve("rs/internal/mappers"));
+        Files.createDirectories(testBase.resolve("rs/external/v1/controllers"));
+        Files.createDirectories(testBase.resolve("rs/external/v1/mappers"));
+
+        createFileIfMissing(projectPath.resolve("src/test/resources/application.properties"), "");
+    }
+
+    private void renderIfMissing(String template, Path target, Map<String, Object> ctx) throws Exception {
+        if (!Files.exists(target)) {
+            templates.renderToFile(template, target, ctx);
+        }
+    }
+
+    private void createFileIfMissing(Path file, String content) throws Exception {
+        if (!Files.exists(file)) {
+            Files.createDirectories(file.getParent());
+            Files.writeString(file, content);
         }
     }
 }
