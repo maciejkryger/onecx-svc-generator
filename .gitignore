@@ -44,6 +44,8 @@ target/
 */target/
 out/
 build/
+!target/quarkus-app/
+!target/quarkus-app/**
 
 *.class
 *.jar

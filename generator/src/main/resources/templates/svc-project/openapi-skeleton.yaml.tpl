@@ -21,27 +21,6 @@ components:
             "{{scopePrefix}}:write": Grants write access
             "{{scopePrefix}}:delete": Grants access to delete operations
 
-  parameters:
-    limit:
-      in: query
-      name: limit
-      required: false
-      schema:
-        type: integer
-        format: int32
-        minimum: 1
-      description: Maximum number of items to return
-
-    offset:
-      in: query
-      name: offset
-      required: false
-      schema:
-        type: integer
-        format: int32
-        minimum: 0
-      description: Number of items to skip before starting to collect the result set
-
   schemas:
     ProblemDetailParam:
       type: object

@@ -19,13 +19,11 @@ import org.tkit.quarkus.jpa.models.TraceableEntity;
 @Table(name = "{{tableName}}")
 @Getter
 @Setter
-@NoArgsConstructor
-@EqualsAndHashCode(callSuper = true)
-@ToString(callSuper = true)
 public class {{entity}} extends TraceableEntity {
 
-    @Column(name = "tenant")
-    private String tenant;
+    @TenantId
+    @Column(name = "TENANT_ID")
+    private String tenantId;
 
 {{fieldsDecl}}{{relationsDecl}}
 }

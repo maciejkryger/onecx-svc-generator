@@ -77,6 +77,7 @@ public class OpenApiService {
                                     String entity,
                                     List<FieldDef> fields,
                                     List<RelationDef> relations) {
+
         Map<String, Object> components =
                 (Map<String, Object>) spec.computeIfAbsent("components", k -> new LinkedHashMap<>());
         Map<String, Object> schemas =
@@ -89,6 +90,7 @@ public class OpenApiService {
     private void upsertSearchCriteriaSchema(Map<String, Object> spec,
                                             String entity,
                                             List<FieldDef> fields) {
+
         Map<String, Object> components =
                 (Map<String, Object>) spec.computeIfAbsent("components", k -> new LinkedHashMap<>());
         Map<String, Object> schemas =
@@ -96,6 +98,21 @@ public class OpenApiService {
 
         Map<String, Object> schema = createEmptySchema();
         Map<String, Object> properties = (Map<String, Object>) schema.get("properties");
+
+        properties.put("pageNumber", Map.of(
+                "type", "integer",
+                "format", "int32",
+                "description", "The number of page.",
+                "default", 0
+        ));
+
+        properties.put("pageSize", Map.of(
+                "type", "integer",
+                "format", "int32",
+                "description", "The size of page",
+                "default", 100,
+                "maximum", 1000
+        ));
 
         for (FieldDef field : fields) {
             properties.put(field.name(), createSimpleProperty(field.type()));
@@ -105,37 +122,12 @@ public class OpenApiService {
     }
 
     @SuppressWarnings("unchecked")
-    private void patchParentSchema(Map<String, Object> spec,
-                                   String parent,
-                                   String field,
-                                   boolean collection,
-                                   String childSchemaName) {
-        Map<String, Object> components =
-                (Map<String, Object>) spec.computeIfAbsent("components", k -> new LinkedHashMap<>());
-        Map<String, Object> schemas =
-                (Map<String, Object>) components.computeIfAbsent("schemas", k -> new LinkedHashMap<>());
-
-        Map<String, Object> parentSchema =
-                (Map<String, Object>) schemas.computeIfAbsent(parent, k -> createEmptySchema());
-        Map<String, Object> parentProperties =
-                (Map<String, Object>) parentSchema.computeIfAbsent("properties", k -> new LinkedHashMap<>());
-
-        if (collection) {
-            Map<String, Object> array = new LinkedHashMap<>();
-            array.put("type", "array");
-            array.put("items", Map.of("$ref", "#/components/schemas/" + childSchemaName));
-            parentProperties.put(field, array);
-        } else {
-            parentProperties.put(field, Map.of("$ref", "#/components/schemas/" + childSchemaName));
-        }
-    }
-
-    @SuppressWarnings("unchecked")
     private void createInternalPaths(Map<String, Object> spec,
                                      String resourcePath,
                                      String tag,
                                      String entity,
                                      String scopePrefix) {
+
         Map<String, Object> paths =
                 (Map<String, Object>) spec.computeIfAbsent("paths", k -> new LinkedHashMap<>());
 
@@ -143,19 +135,13 @@ public class OpenApiService {
         String itemPath = collectionPath + "/{id}";
         String searchPath = collectionPath + "/search";
 
-        Map<String, Object> collectionOps = new LinkedHashMap<>();
-        collectionOps.put("post", createCreateOperation(tag, entity, scopePrefix));
-        paths.put(collectionPath, collectionOps);
-
-        Map<String, Object> itemOps = new LinkedHashMap<>();
-        itemOps.put("get", createGetOperation(tag, entity, scopePrefix));
-        itemOps.put("put", createUpdateOperation(tag, entity, scopePrefix));
-        itemOps.put("delete", createDeleteOperation(tag, entity, scopePrefix));
-        paths.put(itemPath, itemOps);
-
-        Map<String, Object> searchOps = new LinkedHashMap<>();
-        searchOps.put("post", createSearchOperation(tag, entity, scopePrefix));
-        paths.put(searchPath, searchOps);
+        paths.put(collectionPath, Map.of("post", createCreateOperation(tag, entity, scopePrefix)));
+        paths.put(itemPath, Map.of(
+                "get", createGetOperation(tag, entity, scopePrefix),
+                "put", createUpdateOperation(tag, entity, scopePrefix),
+                "delete", createDeleteOperation(tag, entity, scopePrefix)
+        ));
+        paths.put(searchPath, Map.of("post", createSearchOperation(tag, entity, scopePrefix)));
     }
 
     @SuppressWarnings("unchecked")
@@ -164,155 +150,125 @@ public class OpenApiService {
                                      String tag,
                                      String entity,
                                      String scopePrefix) {
+
         Map<String, Object> paths =
                 (Map<String, Object>) spec.computeIfAbsent("paths", k -> new LinkedHashMap<>());
 
-        String itemPath = "/v1/" + resourcePath + "/{id}";
-        String searchPath = "/v1/" + resourcePath + "/search";
-
-        Map<String, Object> itemOps = new LinkedHashMap<>();
-        itemOps.put("get", createGetOperation(tag, entity, scopePrefix));
-        paths.put(itemPath, itemOps);
-
-        Map<String, Object> searchOps = new LinkedHashMap<>();
-        searchOps.put("post", createSearchOperation(tag, entity, scopePrefix));
-        paths.put(searchPath, searchOps);
+        paths.put("/v1/" + resourcePath + "/{id}", Map.of(
+                "get", createGetOperation(tag, entity, scopePrefix)
+        ));
+        paths.put("/v1/" + resourcePath + "/search", Map.of(
+                "post", createSearchOperation(tag, entity, scopePrefix)
+        ));
     }
 
     private Map<String, Object> createGetOperation(String tag, String entity, String scopePrefix) {
-        Map<String, Object> op = new LinkedHashMap<>();
-        op.put("tags", List.of(tag));
-        op.put("operationId", "get" + entity + "ById");
-        op.put("summary", "Get " + entity + " by ID");
-        op.put("security", List.of(Map.of("oauth2", List.of(scopePrefix + ":read"))));
-
-        op.put("parameters", List.of(Map.of(
-                "in", "path",
-                "name", "id",
-                "required", true,
-                "schema", Map.of("type", "string")
-        )));
-
-        Map<String, Object> responses = new LinkedHashMap<>();
-        responses.put("200", successObjectResponse(entity + " found", entity));
-        responses.put("400", problemResponse("Invalid request"));
-        responses.put("404", problemResponse(entity + " not found"));
-        responses.put("500", problemResponse("Internal server error"));
-
-        op.put("responses", responses);
-        return op;
+        return Map.of(
+                "tags", List.of(tag),
+                "operationId", "get" + entity + "ById",
+                "summary", "Get " + entity + " by ID",
+                "security", List.of(Map.of("oauth2", List.of(scopePrefix + ":read"))),
+                "parameters", List.of(Map.of(
+                        "in", "path",
+                        "name", "id",
+                        "required", true,
+                        "schema", Map.of("type", "string")
+                )),
+                "responses", Map.of(
+                        "200", successObjectResponse(entity + " found", entity),
+                        "400", problemResponse("Invalid request"),
+                        "404", problemResponse(entity + " not found")
+                )
+        );
     }
 
     private Map<String, Object> createCreateOperation(String tag, String entity, String scopePrefix) {
-        Map<String, Object> op = new LinkedHashMap<>();
-        op.put("tags", List.of(tag));
-        op.put("operationId", "create" + entity);
-        op.put("summary", "Create " + entity);
-        op.put("security", List.of(Map.of("oauth2", List.of(scopePrefix + ":write"))));
-
-        op.put("requestBody", Map.of(
-                "required", true,
-                "content", Map.of(
-                        "application/json",
-                        Map.of("schema", Map.of("$ref", "#/components/schemas/" + entity))
+        return Map.of(
+                "tags", List.of(tag),
+                "operationId", "create" + entity,
+                "summary", "Create " + entity,
+                "security", List.of(Map.of("oauth2", List.of(scopePrefix + ":write"))),
+                "requestBody", Map.of(
+                        "required", true,
+                        "content", Map.of(
+                                "application/json",
+                                Map.of("schema", Map.of("$ref", "#/components/schemas/" + entity))
+                        )
+                ),
+                "responses", Map.of(
+                        "201", successObjectResponse(entity + " created", entity),
+                        "400", problemResponse("Validation failed")
                 )
-        ));
-
-        Map<String, Object> responses = new LinkedHashMap<>();
-        responses.put("201", successObjectResponse(entity + " created", entity));
-        responses.put("400", problemResponse("Validation failed"));
-        responses.put("409", problemResponse("Constraint conflict"));
-        responses.put("500", problemResponse("Internal server error"));
-
-        op.put("responses", responses);
-        return op;
+        );
     }
 
     private Map<String, Object> createUpdateOperation(String tag, String entity, String scopePrefix) {
-        Map<String, Object> op = new LinkedHashMap<>();
-        op.put("tags", List.of(tag));
-        op.put("operationId", "update" + entity);
-        op.put("summary", "Update " + entity);
-        op.put("security", List.of(Map.of("oauth2", List.of(scopePrefix + ":write"))));
-
-        op.put("parameters", List.of(Map.of(
-                "in", "path",
-                "name", "id",
-                "required", true,
-                "schema", Map.of("type", "string")
-        )));
-
-        op.put("requestBody", Map.of(
-                "required", true,
-                "content", Map.of(
-                        "application/json",
-                        Map.of("schema", Map.of("$ref", "#/components/schemas/" + entity))
+        return Map.of(
+                "tags", List.of(tag),
+                "operationId", "update" + entity,
+                "summary", "Update " + entity,
+                "security", List.of(Map.of("oauth2", List.of(scopePrefix + ":write"))),
+                "parameters", List.of(Map.of(
+                        "in", "path",
+                        "name", "id",
+                        "required", true,
+                        "schema", Map.of("type", "string")
+                )),
+                "requestBody", Map.of(
+                        "required", true,
+                        "content", Map.of(
+                                "application/json",
+                                Map.of("schema", Map.of("$ref", "#/components/schemas/" + entity))
+                        )
+                ),
+                "responses", Map.of(
+                        "200", successObjectResponse(entity + " updated", entity),
+                        "400", problemResponse("Validation failed"),
+                        "404", problemResponse(entity + " not found")
                 )
-        ));
-
-        Map<String, Object> responses = new LinkedHashMap<>();
-        responses.put("200", successObjectResponse(entity + " updated", entity));
-        responses.put("400", problemResponse("Validation failed"));
-        responses.put("404", problemResponse(entity + " not found"));
-        responses.put("409", problemResponse("Optimistic lock conflict"));
-        responses.put("500", problemResponse("Internal server error"));
-
-        op.put("responses", responses);
-        return op;
+        );
     }
 
     private Map<String, Object> createDeleteOperation(String tag, String entity, String scopePrefix) {
-        Map<String, Object> op = new LinkedHashMap<>();
-        op.put("tags", List.of(tag));
-        op.put("operationId", "delete" + entity);
-        op.put("summary", "Delete " + entity);
-        op.put("security", List.of(Map.of("oauth2", List.of(scopePrefix + ":delete"))));
-
-        op.put("parameters", List.of(Map.of(
-                "in", "path",
-                "name", "id",
-                "required", true,
-                "schema", Map.of("type", "string")
-        )));
-
-        Map<String, Object> responses = new LinkedHashMap<>();
-        responses.put("204", Map.of("description", entity + " deleted"));
-        responses.put("400", problemResponse("Invalid request"));
-        responses.put("404", problemResponse(entity + " not found"));
-        responses.put("409", problemResponse("Constraint conflict"));
-        responses.put("500", problemResponse("Internal server error"));
-
-        op.put("responses", responses);
-        return op;
+        return Map.of(
+                "tags", List.of(tag),
+                "operationId", "delete" + entity,
+                "summary", "Delete " + entity,
+                "security", List.of(Map.of("oauth2", List.of(scopePrefix + ":delete"))),
+                "parameters", List.of(Map.of(
+                        "in", "path",
+                        "name", "id",
+                        "required", true,
+                        "schema", Map.of("type", "string")
+                )),
+                "responses", Map.of(
+                        "204", Map.of("description", entity + " deleted"),
+                        "400", problemResponse("Invalid request"),
+                        "404", problemResponse(entity + " not found")
+                )
+        );
     }
 
     private Map<String, Object> createSearchOperation(String tag, String entity, String scopePrefix) {
-        Map<String, Object> op = new LinkedHashMap<>();
-        op.put("tags", List.of(tag));
-        op.put("operationId", "search" + naming.upperFirst(naming.pluralPath(entity).replace("-", "")));
-        op.put("summary", "Search " + naming.pluralPath(entity));
-        op.put("security", List.of(Map.of("oauth2", List.of(scopePrefix + ":read"))));
-
-        op.put("parameters", List.of(
-                Map.of("$ref", "#/components/parameters/limit"),
-                Map.of("$ref", "#/components/parameters/offset")
-        ));
-
-        op.put("requestBody", Map.of(
-                "required", false,
-                "content", Map.of(
-                        "application/json",
-                        Map.of("schema", Map.of("$ref", "#/components/schemas/" + entity + "SearchCriteria"))
+        return Map.of(
+                "tags", List.of(tag),
+                "operationId", "search" + naming.upperFirst(naming.pluralPath(entity).replace("-", "")),
+                "summary", "Search " + naming.pluralPath(entity),
+                "security", List.of(Map.of("oauth2", List.of(scopePrefix + ":read"))),
+                "requestBody", Map.of(
+                        "required", false,
+                        "content", Map.of(
+                                "application/json",
+                                Map.of("schema", Map.of(
+                                        "$ref", "#/components/schemas/" + entity + "SearchCriteria"
+                                ))
+                        )
+                ),
+                "responses", Map.of(
+                        "200", successArrayResponse("Search result for " + naming.pluralPath(entity), entity),
+                        "400", problemResponse("Validation failed")
                 )
-        ));
-
-        Map<String, Object> responses = new LinkedHashMap<>();
-        responses.put("200", successArrayResponse("Search result for " + naming.pluralPath(entity), entity));
-        responses.put("400", problemResponse("Validation failed"));
-        responses.put("500", problemResponse("Internal server error"));
-
-        op.put("responses", responses);
-        return op;
+        );
     }
 
     private Map<String, Object> successObjectResponse(String description, String schemaName) {
@@ -350,8 +306,6 @@ public class OpenApiService {
 
     private Map<String, Object> createSchema(List<FieldDef> fields, List<RelationDef> relations) {
         Map<String, Object> schema = createEmptySchema();
-
-        @SuppressWarnings("unchecked")
         Map<String, Object> props = (Map<String, Object>) schema.get("properties");
 
         props.put("id", Map.of("type", "string"));
@@ -367,7 +321,9 @@ public class OpenApiService {
                         "items", Map.of("$ref", "#/components/schemas/" + relation.target())
                 ));
             } else {
-                props.put(relation.field(), Map.of("$ref", "#/components/schemas/" + relation.target()));
+                props.put(relation.field(), Map.of(
+                        "$ref", "#/components/schemas/" + relation.target()
+                ));
             }
         }
 
@@ -377,7 +333,7 @@ public class OpenApiService {
     private Map<String, Object> createEmptySchema() {
         Map<String, Object> schema = new LinkedHashMap<>();
         schema.put("type", "object");
-        schema.put("properties", new LinkedHashMap<String, Object>());
+        schema.put("properties", new LinkedHashMap<>());
         return schema;
     }
 
@@ -411,6 +367,7 @@ public class OpenApiService {
 
     @SuppressWarnings("unchecked")
     private void ensureBase(Map<String, Object> spec, String scopePrefix, String serviceName) {
+
         spec.putIfAbsent("openapi", "3.0.3");
 
         spec.computeIfAbsent("info", k -> {
@@ -422,9 +379,7 @@ public class OpenApiService {
 
         spec.computeIfAbsent("servers", k -> {
             List<Map<String, Object>> servers = new ArrayList<>();
-            Map<String, Object> server = new LinkedHashMap<>();
-            server.put("url", "/api");
-            servers.add(server);
+            servers.add(Map.of("url", "/api"));
             return servers;
         });
 
@@ -434,42 +389,21 @@ public class OpenApiService {
                 (Map<String, Object>) components.computeIfAbsent("securitySchemes", k -> new LinkedHashMap<>());
 
         if (!securitySchemes.containsKey("oauth2")) {
-            Map<String, Object> oauth2 = new LinkedHashMap<>();
-            oauth2.put("type", "oauth2");
-
-            Map<String, Object> flows = new LinkedHashMap<>();
-            Map<String, Object> clientCredentials = new LinkedHashMap<>();
-            clientCredentials.put("tokenUrl", "https://oauth.simple.api/token");
-
-            Map<String, Object> scopes = new LinkedHashMap<>();
-            scopes.put(scopePrefix + ":all", "Grants access to all operations");
-            scopes.put(scopePrefix + ":read", "Grants read access");
-            scopes.put(scopePrefix + ":write", "Grants write access");
-            scopes.put(scopePrefix + ":delete", "Grants access to delete operations");
-
-            clientCredentials.put("scopes", scopes);
-            flows.put("clientCredentials", clientCredentials);
-            oauth2.put("flows", flows);
-
-            securitySchemes.put("oauth2", oauth2);
+            securitySchemes.put("oauth2", Map.of(
+                    "type", "oauth2",
+                    "flows", Map.of(
+                            "clientCredentials", Map.of(
+                                    "tokenUrl", "https://oauth.simple.api/token",
+                                    "scopes", Map.of(
+                                            scopePrefix + ":all", "Grants access to all operations",
+                                            scopePrefix + ":read", "Grants read access",
+                                            scopePrefix + ":write", "Grants write access",
+                                            scopePrefix + ":delete", "Grants access to delete operations"
+                                    )
+                            )
+                    )
+            ));
         }
-
-        Map<String, Object> parameters =
-                (Map<String, Object>) components.computeIfAbsent("parameters", k -> new LinkedHashMap<>());
-        parameters.putIfAbsent("limit", Map.of(
-                "in", "query",
-                "name", "limit",
-                "required", false,
-                "schema", Map.of("type", "integer", "format", "int32", "minimum", 1),
-                "description", "Maximum number of items to return"
-        ));
-        parameters.putIfAbsent("offset", Map.of(
-                "in", "query",
-                "name", "offset",
-                "required", false,
-                "schema", Map.of("type", "integer", "format", "int32", "minimum", 0),
-                "description", "Number of items to skip before starting to collect the result set"
-        ));
 
         Map<String, Object> schemas =
                 (Map<String, Object>) components.computeIfAbsent("schemas", k -> new LinkedHashMap<>());

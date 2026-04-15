@@ -165,7 +165,7 @@ public class ModelParserService {
         StringBuilder sb = new StringBuilder();
         for (FieldDef f : fields) {
             sb.append("    @Column(name = \"")
-                    .append(dbName(f.name()))
+                    .append(dbName(f.name()).toUpperCase())
                     .append("\")\n");
             sb.append("    private ")
                     .append(mapDomainType(f.type()))

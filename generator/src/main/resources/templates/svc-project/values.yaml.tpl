@@ -4,9 +4,14 @@ app:
     repository: "onecx/{{name}}"
   db:
     enabled: true
-
-operator:
-  microservice:
-    spec:
-      name: "{{name}}"
-      description: "OneCX backend service"
+  operator:
+    keycloak:
+      client:
+        enabled: true
+        spec:
+          kcConfig:
+            defaultClientScopes: [ {{scopePrefix}}:read ]
+    microservice:
+      spec:
+        description: "OneCX backend service"
+        name: "{{name}}"

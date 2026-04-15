@@ -33,7 +33,6 @@ public class {{entity}}Controller implements {{generatedApiInterface}} {
     ExceptionMapper exceptionMapper;
 
     @Override
-    @Transactional(Transactional.TxType.REQUIRED)
     public Response create{{entity}}({{generatedDto}} dto) {
         var created = service.create(dto);
         return Response.status(Response.Status.CREATED)
@@ -47,14 +46,12 @@ public class {{entity}}Controller implements {{generatedApiInterface}} {
     }
 
     @Override
-    @Transactional(Transactional.TxType.REQUIRED)
     public Response update{{entity}}(String id, {{generatedDto}} dto) {
         var updated = service.update(id, dto);
         return Response.ok(mapper.toDto(updated)).build();
     }
 
     @Override
-    @Transactional(Transactional.TxType.REQUIRED)
     public Response delete{{entity}}(String id) {
         service.delete(id);
         return Response.noContent().build();
