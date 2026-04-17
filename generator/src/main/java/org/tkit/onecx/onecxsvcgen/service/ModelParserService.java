@@ -446,6 +446,249 @@ public class ModelParserService {
         return buildRelationCreateResolvers(relations);
     }
 
+    public String buildTestCreateDtoBody(List<FieldDef> fields, List<RelationDef> relations, String dtoClassName) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(dtoClassName).append(" request = new ").append(dtoClassName).append("();\n");
+
+        for (FieldDef field : fields) {
+            sb.append("        request.")
+                    .append(setter(field.name()))
+                    .append("(")
+                    .append(testDtoLiteral(field.type(), false))
+                    .append(");\n");
+        }
+
+        // relations intentionally skipped for now to keep generated tests simple and compile-safe
+
+        return sb.toString();
+    }
+
+    public String buildTestUpdateDtoBody(List<FieldDef> fields, List<RelationDef> relations, String dtoClassName) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(dtoClassName).append(" request = new ").append(dtoClassName).append("();\n");
+
+        for (FieldDef field : fields) {
+            sb.append("        request.")
+                    .append(setter(field.name()))
+                    .append("(")
+                    .append(testDtoLiteral(field.type(), true))
+                    .append(");\n");
+        }
+
+        // relations intentionally skipped for now to keep generated tests simple and compile-safe
+
+        return sb.toString();
+    }
+
+    public String buildTestSearchCriteriaBody(List<FieldDef> fields, String criteriaClassName) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(criteriaClassName).append(" request = new ").append(criteriaClassName).append("();\n");
+        sb.append("        request.setPageNumber(0);\n");
+        sb.append("        request.setPageSize(10);\n");
+
+        for (FieldDef field : fields) {
+            sb.append("        request.")
+                    .append(setter(field.name()))
+                    .append("(")
+                    .append(testDtoLiteral(field.type(), false))
+                    .append(");\n");
+        }
+
+        return sb.toString();
+    }
+
+    public String buildTestExternalSearchCriteriaBody(List<FieldDef> fields, String criteriaClassName) {
+        return buildTestSearchCriteriaBody(fields, criteriaClassName);
+    }
+
+    public String buildTestEntityFieldsInit(List<FieldDef> fields, List<RelationDef> relations) {
+        StringBuilder sb = new StringBuilder();
+
+        for (FieldDef field : fields) {
+            sb.append("        entity.")
+                    .append(setter(field.name()))
+                    .append("(")
+                    .append(testEntityLiteral(field.type(), false))
+                    .append(");\n");
+        }
+
+        // relations intentionally skipped for now
+
+        return sb.toString();
+    }
+
+    public String buildTestDtoFieldsInit(List<FieldDef> fields, List<RelationDef> relations, String dtoClassName) {
+        StringBuilder sb = new StringBuilder();
+
+        for (FieldDef field : fields) {
+            sb.append("        dto.")
+                    .append(setter(field.name()))
+                    .append("(")
+                    .append(testDtoLiteral(field.type(), false))
+                    .append(");\n");
+        }
+
+        // relations intentionally skipped for now
+
+        return sb.toString();
+    }
+
+    public String buildTestDtoUpdateFieldsInit(List<FieldDef> fields, List<RelationDef> relations, String dtoClassName) {
+        StringBuilder sb = new StringBuilder();
+
+        for (FieldDef field : fields) {
+            sb.append("        dto.")
+                    .append(setter(field.name()))
+                    .append("(")
+                    .append(testDtoLiteral(field.type(), true))
+                    .append(");\n");
+        }
+
+        // relations intentionally skipped for now
+
+        return sb.toString();
+    }
+
+    public String buildTestDtoAssertions(List<FieldDef> fields, List<RelationDef> relations) {
+        StringBuilder sb = new StringBuilder();
+
+        for (FieldDef field : fields) {
+            sb.append("        assertEquals(")
+                    .append(testDtoLiteral(field.type(), false))
+                    .append(", dto.")
+                    .append(dtoGetter(field.name()))
+                    .append(");\n");
+        }
+
+        // relations intentionally skipped for now
+
+        return sb.toString();
+    }
+
+    public String buildTestExternalDtoAssertions(List<FieldDef> fields, List<RelationDef> relations) {
+        return buildTestDtoAssertions(fields, relations);
+    }
+
+    public String buildTestEntityAssertions(List<FieldDef> fields, List<RelationDef> relations) {
+        StringBuilder sb = new StringBuilder();
+
+        for (FieldDef field : fields) {
+            if ("BigDecimal".equals(field.type())) {
+                sb.append("        assertEquals(0, entity.")
+                        .append(entityGetter(field.name(), field.type()))
+                        .append(".compareTo(")
+                        .append(testMappedEntityLiteral(field.type(), false))
+                        .append("));\n");
+            } else {
+                sb.append("        assertEquals(")
+                        .append(testMappedEntityLiteral(field.type(), false))
+                        .append(", entity.")
+                        .append(entityGetter(field.name(), field.type()))
+                        .append(");\n");
+            }
+        }
+
+        return sb.toString();
+    }
+
+    public String buildTestUpdatedEntityAssertions(List<FieldDef> fields, List<RelationDef> relations) {
+        StringBuilder sb = new StringBuilder();
+
+        for (FieldDef field : fields) {
+            if ("BigDecimal".equals(field.type())) {
+                sb.append("        assertEquals(0, entity.")
+                        .append(entityGetter(field.name(), field.type()))
+                        .append(".compareTo(")
+                        .append(testMappedEntityLiteral(field.type(), true))
+                        .append("));\n");
+            } else {
+                sb.append("        assertEquals(")
+                        .append(testMappedEntityLiteral(field.type(), true))
+                        .append(", entity.")
+                        .append(entityGetter(field.name(), field.type()))
+                        .append(");\n");
+            }
+        }
+
+        return sb.toString();
+    }
+
+    private String testMappedEntityLiteral(String type, boolean updated) {
+        return switch (type) {
+            case "String" -> updated ? "\"updated-value\"" : "\"test-value\"";
+            case "Integer", "int" -> updated ? "2" : "1";
+            case "Long", "long" -> updated ? "2L" : "1L";
+            case "BigDecimal" -> updated ? "new java.math.BigDecimal(\"2.0\")" : "new java.math.BigDecimal(\"1.0\")";
+            case "Boolean", "boolean" -> updated ? "false" : "true";
+            case "LocalDate" -> updated ? "java.time.LocalDate.of(2024, 2, 2)" : "java.time.LocalDate.of(2024, 1, 1)";
+            case "LocalDateTime" -> updated
+                    ? "java.time.LocalDateTime.of(2024, 2, 2, 12, 0)"
+                    : "java.time.LocalDateTime.of(2024, 1, 1, 10, 0)";
+            case "UUID" -> updated
+                    ? "java.util.UUID.fromString(\"00000000-0000-0000-0000-000000000002\")"
+                    : "java.util.UUID.fromString(\"00000000-0000-0000-0000-000000000001\")";
+            default -> updated ? "\"updated-value\"" : "\"test-value\"";
+        };
+    }
+
+    private String setter(String fieldName) {
+        return "set" + upperFirst(fieldName);
+    }
+
+    private String dtoGetter(String fieldName) {
+        return "get" + upperFirst(fieldName) + "()";
+    }
+
+    private String entityGetter(String fieldName, String type) {
+        if ("boolean".equals(type)) {
+            return "is" + upperFirst(fieldName) + "()";
+        }
+        return "get" + upperFirst(fieldName) + "()";
+    }
+
+    private String upperFirst(String value) {
+        if (value == null || value.isBlank()) {
+            return value;
+        }
+        return Character.toUpperCase(value.charAt(0)) + value.substring(1);
+    }
+
+    private String testEntityLiteral(String type, boolean updated) {
+        return switch (type) {
+            case "String" -> updated ? "\"updated-value\"" : "\"test-value\"";
+            case "Integer", "int" -> updated ? "2" : "1";
+            case "Long", "long" -> updated ? "2L" : "1L";
+            case "BigDecimal" -> updated ? "new java.math.BigDecimal(\"2.00\")" : "java.math.BigDecimal.ONE";
+            case "Boolean", "boolean" -> updated ? "false" : "true";
+            case "LocalDate" -> updated ? "java.time.LocalDate.of(2024, 2, 2)" : "java.time.LocalDate.of(2024, 1, 1)";
+            case "LocalDateTime" -> updated
+                    ? "java.time.LocalDateTime.of(2024, 2, 2, 12, 0)"
+                    : "java.time.LocalDateTime.of(2024, 1, 1, 10, 0)";
+            case "UUID" -> updated
+                    ? "java.util.UUID.fromString(\"00000000-0000-0000-0000-000000000002\")"
+                    : "java.util.UUID.fromString(\"00000000-0000-0000-0000-000000000001\")";
+            default -> updated ? "\"updated-value\"" : "\"test-value\"";
+        };
+    }
+
+    private String testDtoLiteral(String type, boolean updated) {
+        return switch (type) {
+            case "String" -> updated ? "\"updated-value\"" : "\"test-value\"";
+            case "Integer", "int" -> updated ? "2" : "1";
+            case "Long", "long" -> updated ? "2L" : "1L";
+            case "BigDecimal" -> updated ? "2.0D" : "1.0D";
+            case "Boolean", "boolean" -> updated ? "false" : "true";
+            case "LocalDate" -> updated ? "java.time.LocalDate.of(2024, 2, 2)" : "java.time.LocalDate.of(2024, 1, 1)";
+            case "LocalDateTime" -> updated
+                    ? "java.time.LocalDateTime.of(2024, 2, 2, 12, 0)"
+                    : "java.time.LocalDateTime.of(2024, 1, 1, 10, 0)";
+            case "UUID" -> updated
+                    ? "java.util.UUID.fromString(\"00000000-0000-0000-0000-000000000002\")"
+                    : "java.util.UUID.fromString(\"00000000-0000-0000-0000-000000000001\")";
+            default -> updated ? "\"updated-value\"" : "\"test-value\"";
+        };
+    }
+
     public String modelPackage(String pkg) {
         return pkg + ".domain.models";
     }

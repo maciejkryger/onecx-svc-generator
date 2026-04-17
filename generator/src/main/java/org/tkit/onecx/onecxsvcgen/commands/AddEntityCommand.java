@@ -156,6 +156,7 @@ public class AddEntityCommand implements Runnable {
             ctx.put("resourceOperationPlural", resourceOperationPlural);
             ctx.put("tableName", models.tableName(entity));
             ctx.put("entityImports", models.buildEntityImports(fields));
+            ctx.put("scopePrefix", scopePrefix);
 
             // INTERNAL contract bindings
             ctx.put("resourceTag", internalTag);
@@ -193,15 +194,26 @@ public class AddEntityCommand implements Runnable {
             ctx.put("relationCreateResolvers", models.buildRelationCreateResolvers(relations));
             ctx.put("relationUpdateResolvers", models.buildRelationUpdateResolvers(relations));
 
+            // test code fragments
+            ctx.put("testCreateDtoBody", models.buildTestCreateDtoBody(fields, relations, entity + "DTO"));
+            ctx.put("testUpdateDtoBody", models.buildTestUpdateDtoBody(fields, relations, entity + "DTO"));
+            ctx.put("testSearchCriteriaBody", models.buildTestSearchCriteriaBody(fields, entity + "SearchCriteriaDTO"));
+            ctx.put("testExternalSearchCriteriaBody", models.buildTestExternalSearchCriteriaBody(fields, entity + "SearchCriteriaDTOV1"));
+
+            ctx.put("testEntityFieldsInit", models.buildTestEntityFieldsInit(fields, relations));
+            ctx.put("testDtoFieldsInit", models.buildTestDtoFieldsInit(fields, relations, entity + "DTO"));
+            ctx.put("testDtoUpdateFieldsInit", models.buildTestDtoUpdateFieldsInit(fields, relations, entity + "DTO"));
+
+            ctx.put("testDtoAssertions", models.buildTestDtoAssertions(fields, relations));
+            ctx.put("testExternalDtoAssertions", models.buildTestExternalDtoAssertions(fields, relations));
+            ctx.put("testEntityAssertions", models.buildTestEntityAssertions(fields, relations));
+            ctx.put("testUpdatedEntityAssertions", models.buildTestUpdatedEntityAssertions(fields, relations));
+
             Path base = projectPath.resolve("src/main/java/" + pkg.replace('.', '/'));
-            Files.createDirectories(base.resolve("domain/models"));
-            Files.createDirectories(base.resolve("domain/daos"));
-            Files.createDirectories(base.resolve("domain/services"));
-            Files.createDirectories(base.resolve("rs/internal/controllers"));
-            Files.createDirectories(base.resolve("rs/internal/mappers"));
-            Files.createDirectories(base.resolve("rs/external/v1/controllers"));
-            Files.createDirectories(base.resolve("rs/external/v1/mappers"));
-            Files.createDirectories(projectPath.resolve("src/main/resources/db/changelog"));
+            Path testBase = projectPath.resolve("src/test/java/" + pkg.replace('.', '/'));
+
+            ensureMainStructure(base, projectPath);
+            ensureTestStructure(testBase, projectPath);
 
             templates.renderToFile(
                     "templates/entity/Entity.java.tpl",
@@ -256,6 +268,56 @@ public class AddEntityCommand implements Runnable {
                 );
             }
 
+            // TESTS
+
+            // always
+            renderIfMissing(
+                    "templates/test/ServiceTest.java.tpl",
+                    testBase.resolve("domain/services/" + entity + "ServiceTest.java"),
+                    ctx
+            );
+            renderIfMissing(
+                    "templates/test/MapperTest.java.tpl",
+                    testBase.resolve("rs/internal/mappers/" + entity + "MapperTest.java"),
+                    ctx
+            );
+            renderIfMissing(
+                    "templates/test/ExternalMapperTest.java.tpl",
+                    testBase.resolve("rs/external/v1/mappers/" + entity + "MapperTest.java"),
+                    ctx
+            );
+
+            // only for root entities with controllers
+            if (root) {
+                renderIfMissing(
+                        "templates/test/AbstractTest.java.tpl",
+                        testBase.resolve("AbstractTest.java"),
+                        ctx
+                );
+
+                renderIfMissing(
+                        "templates/test/ControllerTest.java.tpl",
+                        testBase.resolve("rs/internal/controllers/" + entity + "ControllerTest.java"),
+                        ctx
+                );
+                renderIfMissing(
+                        "templates/test/ExternalControllerTest.java.tpl",
+                        testBase.resolve("rs/external/v1/controllers/" + entity + "ControllerTest.java"),
+                        ctx
+                );
+
+                renderIfMissing(
+                        "templates/test/ControllerIT.java.tpl",
+                        testBase.resolve("rs/internal/controllers/" + entity + "ControllerIT.java"),
+                        ctx
+                );
+                renderIfMissing(
+                        "templates/test/ExternalControllerIT.java.tpl",
+                        testBase.resolve("rs/external/v1/controllers/" + entity + "ControllerIT.java"),
+                        ctx
+                );
+            }
+
             liquibase.ensureStructure(projectPath);
 
             String changelogFile = liquibase.entityFileName(entity);
@@ -275,11 +337,13 @@ public class AddEntityCommand implements Runnable {
             System.out.println("✔ Generated domain layer for: " + entity);
             if (root) {
                 System.out.println("✔ Updated internal API/runtime (CRUD + search) and external-v1 API/runtime (get + search) for: " + entity);
+                System.out.println("✔ Generated controller, mapper and service tests for root entity: " + entity);
             } else {
                 System.out.println(
                         "✔ Added component schema " + entity + " to parent API " + apiParent
                                 + " in internal and external-v1 contracts. No standalone CRUD paths created."
                 );
+                System.out.println("✔ Generated mapper and service tests for non-root entity: " + entity);
             }
 
             if (liquibaseDiff) {
@@ -297,6 +361,40 @@ public class AddEntityCommand implements Runnable {
             }
         } catch (Exception e) {
             throw new RuntimeException("add-entity failed", e);
+        }
+    }
+
+    private void ensureMainStructure(Path base, Path projectPath) throws Exception {
+        Files.createDirectories(base.resolve("domain/models"));
+        Files.createDirectories(base.resolve("domain/daos"));
+        Files.createDirectories(base.resolve("domain/services"));
+        Files.createDirectories(base.resolve("rs/internal/controllers"));
+        Files.createDirectories(base.resolve("rs/internal/mappers"));
+        Files.createDirectories(base.resolve("rs/external/v1/controllers"));
+        Files.createDirectories(base.resolve("rs/external/v1/mappers"));
+        Files.createDirectories(projectPath.resolve("src/main/resources/db/changelog"));
+    }
+
+    private void ensureTestStructure(Path testBase, Path projectPath) throws Exception {
+        Files.createDirectories(testBase.resolve("domain/services"));
+        Files.createDirectories(testBase.resolve("rs/internal/controllers"));
+        Files.createDirectories(testBase.resolve("rs/internal/mappers"));
+        Files.createDirectories(testBase.resolve("rs/external/v1/controllers"));
+        Files.createDirectories(testBase.resolve("rs/external/v1/mappers"));
+
+        createFileIfMissing(projectPath.resolve("src/test/resources/application.properties"), "");
+    }
+
+    private void renderIfMissing(String template, Path target, Map<String, Object> ctx) throws Exception {
+        if (!Files.exists(target)) {
+            templates.renderToFile(template, target, ctx);
+        }
+    }
+
+    private void createFileIfMissing(Path file, String content) throws Exception {
+        if (!Files.exists(file)) {
+            Files.createDirectories(file.getParent());
+            Files.writeString(file, content);
         }
     }
 }
