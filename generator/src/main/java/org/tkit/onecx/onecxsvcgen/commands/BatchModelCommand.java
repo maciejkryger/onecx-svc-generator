@@ -269,8 +269,6 @@ public class BatchModelCommand implements Runnable {
 
                 // TESTS generated from current structure
 
-                // always
-
                 // only for root entities with controllers
                 if (entityDef.api().expose()) {
                     renderIfMissing(
@@ -279,12 +277,13 @@ public class BatchModelCommand implements Runnable {
                             ctx
                     );
 
-                    renderIfMissing(
+                    // Controller tests are always regenerated to keep generated fragments up-to-date
+                    templates.renderToFile(
                             "templates/test/ControllerTest.java.tpl",
                             testBase.resolve("rs/internal/controllers/" + entity + "ControllerTest.java"),
                             ctx
                     );
-                    renderIfMissing(
+                    templates.renderToFile(
                             "templates/test/ExternalControllerTest.java.tpl",
                             testBase.resolve("rs/external/v1/controllers/" + entity + "ControllerTest.java"),
                             ctx

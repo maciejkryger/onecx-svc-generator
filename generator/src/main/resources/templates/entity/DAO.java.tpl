@@ -40,9 +40,6 @@ public class {{entity}}DAO extends AbstractDAO<{{entity}}> {
         if (pageSize <= 0) {
             pageSize = 100;
         }
-        if (pageSize > 1000) {
-            pageSize = 1000;
-        }
 
         int offset = pageNumber * pageSize;
 

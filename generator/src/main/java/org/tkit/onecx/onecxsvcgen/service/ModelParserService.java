@@ -889,6 +889,42 @@ public class ModelParserService {
             sb.append("                .path(\"").append(relation.field()).append(".id\");\n\n");
             sb.append("        assertNotNull(returnedRelationId);\n");
             sb.append("    }\n\n");
+
+            // blank id → treated as new nested object (covers isBlank() == true branch in create resolver)
+            sb.append("    @Test\n");
+            sb.append("    void create").append(entity).append("WithBlank").append(upperRelation).append("IdShouldCreateNested")
+                    .append(upperRelation).append("() {\n");
+            sb.append(buildRequestAssignment("request", fields, relation, relationPayloadBlankId(relation), Collections.emptyMap()));
+            sb.append("        String entityId = given()\n");
+            sb.append("                .auth().oauth2(token)\n");
+            sb.append("                .header(APM_HEADER_PARAM, idToken)\n");
+            sb.append("                .contentType(APPLICATION_JSON)\n");
+            sb.append("                .body(request)\n");
+            sb.append("                .when()\n");
+            sb.append("                .post(\"/internal/").append(resourcePath).append("\")\n");
+            sb.append("                .then()\n");
+            sb.append("                .statusCode(201)\n");
+            sb.append("                .extract()\n");
+            sb.append("                .path(\"id\");\n\n");
+            sb.append("        assertNotNull(entityId);\n");
+            sb.append("    }\n\n");
+
+            // blank id on update → treated as new nested object (covers isBlank() == true branch in update resolver)
+            sb.append("    @Test\n");
+            sb.append("    void update").append(entity).append("WithBlank").append(upperRelation).append("IdShouldCreateNested")
+                    .append(upperRelation).append("() {\n");
+            sb.append("        String entityId = create").append(entity).append("AndReturnId();\n\n");
+            sb.append(buildRequestAssignment("request", fields, relation, relationPayloadBlankId(relation), updatedOverrides(fields)));
+            sb.append("        given()\n");
+            sb.append("                .auth().oauth2(token)\n");
+            sb.append("                .header(APM_HEADER_PARAM, idToken)\n");
+            sb.append("                .contentType(MediaType.APPLICATION_JSON)\n");
+            sb.append("                .body(request)\n");
+            sb.append("                .when()\n");
+            sb.append("                .put(\"/internal/").append(resourcePath).append("/{id}\", entityId)\n");
+            sb.append("                .then()\n");
+            sb.append("                .statusCode(200);\n");
+            sb.append("    }\n\n");
         }
 
         sb.append("    @Test\n");
@@ -1023,6 +1059,34 @@ public class ModelParserService {
             sb.append("        assertTrue(result.size() >= 1);\n");
             sb.append("    }\n\n");
         }
+
+        // branch: criteria with all fields null → no predicates added
+        sb.append("    @Test\n");
+        sb.append("    void search").append(namingLikePlural(resourcePath))
+                .append("WithNullFieldsShouldReturnAll() {\n");
+        sb.append("        create").append(entity).append("AndReturnId();\n\n");
+        sb.append("        String criteria = \"\"\"\n");
+        sb.append("                {\n");
+        sb.append("                  \"pageNumber\": 0,\n");
+        sb.append("                  \"pageSize\": 100\n");
+        sb.append("                }\n");
+        sb.append("                \"\"\";\n\n");
+        sb.append("        List<?> result = given()\n");
+        sb.append("                .auth().oauth2(token)\n");
+        sb.append("                .header(APM_HEADER_PARAM, idToken)\n");
+        sb.append("                .contentType(APPLICATION_JSON)\n");
+        sb.append("                .body(criteria)\n");
+        sb.append("                .when()\n");
+        sb.append("                .post(\"/internal/").append(resourcePath).append("/search\")\n");
+        sb.append("                .then()\n");
+        sb.append("                .statusCode(200)\n");
+        sb.append("                .extract()\n");
+        sb.append("                .body()\n");
+        sb.append("                .jsonPath()\n");
+        sb.append("                .getList(\"$\");\n\n");
+        sb.append("        assertNotNull(result);\n");
+        sb.append("        assertTrue(result.size() >= 1);\n");
+        sb.append("    }\n\n");
 
         return sb.toString();
     }
@@ -1257,6 +1321,10 @@ public class ModelParserService {
 
     private String relationPayloadEmptyObject(RelationDef relation) {
         return "{\\n                    \\\"name\\\": \\\"test-" + relation.field() + "\\\"\\n                  }";
+    }
+
+    private String relationPayloadBlankId(RelationDef relation) {
+        return "{\\n                    \\\"id\\\": \\\"\\\"\\n                  }";
     }
 
     private Map<String, String> updatedOverrides(List<FieldDef> fields) {
