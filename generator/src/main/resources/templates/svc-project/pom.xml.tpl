@@ -18,6 +18,10 @@
     <dependencies>
         <!-- OneCX / TKit -->
         <dependency>
+            <groupId>org.tkit.quarkus.lib</groupId>
+            <artifactId>tkit-quarkus-jpa-tenant</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.tkit.onecx.quarkus</groupId>
             <artifactId>onecx-tenant</artifactId>
         </dependency>

@@ -170,6 +170,22 @@ public class BatchModelCommand implements Runnable {
                 ctx.put("testUpdateDtoBody", models.buildTestUpdateDtoBody(entityDef.fields(), entityDef.relations(), entity + "DTO"));
                 ctx.put("testSearchCriteriaBody", models.buildTestSearchCriteriaBody(entityDef.fields(), entity + "SearchCriteriaDTO"));
                 ctx.put("testExternalSearchCriteriaBody", models.buildTestExternalSearchCriteriaBody(entityDef.fields(), entity + "SearchCriteriaDTOV1"));
+                ctx.put(
+                        "testInternalControllerAdditionalMethods",
+                        models.buildInternalControllerAdditionalMethods(entity, resourcePath, entityDef.fields(), entityDef.relations())
+                );
+                ctx.put(
+                        "testInternalControllerHelperMethods",
+                        models.buildInternalControllerHelperMethods(entity, resourcePath, entityDef.fields(), entityDef.relations())
+                );
+                ctx.put(
+                        "testExternalControllerAdditionalMethods",
+                        models.buildExternalControllerAdditionalMethods(entity, resourcePath, entityDef.fields(), entityDef.relations())
+                );
+                ctx.put(
+                        "testExternalControllerHelperMethods",
+                        models.buildExternalControllerHelperMethods(entity, resourcePath, entityDef.fields(), entityDef.relations())
+                );
 
                 ctx.put("testEntityFieldsInit", models.buildTestEntityFieldsInit(entityDef.fields(), entityDef.relations()));
                 ctx.put("testDtoFieldsInit", models.buildTestDtoFieldsInit(entityDef.fields(), entityDef.relations(), entity + "DTO"));
@@ -192,15 +208,20 @@ public class BatchModelCommand implements Runnable {
                         ctx
                 );
                 templates.renderToFile(
-                        "templates/entity/DAO.java.tpl",
+                        entityDef.api().expose()
+                                ? "templates/entity/DAO.java.tpl"
+                                : "templates/entity/NonRootDAO.java.tpl",
                         base.resolve("domain/daos/" + entity + "DAO.java"),
                         ctx
                 );
-                templates.renderToFile(
-                        "templates/entity/Service.java.tpl",
-                        base.resolve("domain/services/" + entity + "Service.java"),
-                        ctx
-                );
+
+                if (entityDef.api().expose()) {
+                    templates.renderToFile(
+                            "templates/entity/Service.java.tpl",
+                            base.resolve("domain/services/" + entity + "Service.java"),
+                            ctx
+                    );
+                }
 
                 // INTERNAL runtime boundary
                 templates.renderToFile(
@@ -208,9 +229,16 @@ public class BatchModelCommand implements Runnable {
                         base.resolve("rs/internal/mappers/" + entity + "Mapper.java"),
                         ctx
                 );
-                templates.renderToFile(
-                        "templates/entity/ExceptionMapper.java.tpl",
-                        base.resolve("rs/internal/mappers/ExceptionMapper.java"),
+
+                // shared / common exception mapper hierarchy
+                renderIfMissing(
+                        "templates/entity/CommonExceptionMapper.java.tpl",
+                        base.resolve("rs/common/ExceptionMapper.java"),
+                        ctx
+                );
+                renderIfMissing(
+                        "templates/entity/InternalExceptionMapper.java.tpl",
+                        base.resolve("rs/internal/mappers/InternalExceptionMapper.java"),
                         ctx
                 );
 
@@ -220,9 +248,9 @@ public class BatchModelCommand implements Runnable {
                         base.resolve("rs/external/v1/mappers/" + entity + "Mapper.java"),
                         ctx
                 );
-                templates.renderToFile(
+                renderIfMissing(
                         "templates/entity/ExternalExceptionMapper.java.tpl",
-                        base.resolve("rs/external/v1/mappers/ExceptionMapper.java"),
+                        base.resolve("rs/external/v1/mappers/ExternalExceptionMapper.java"),
                         ctx
                 );
 
@@ -242,21 +270,6 @@ public class BatchModelCommand implements Runnable {
                 // TESTS generated from current structure
 
                 // always
-                renderIfMissing(
-                        "templates/test/ServiceTest.java.tpl",
-                        testBase.resolve("domain/services/" + entity + "ServiceTest.java"),
-                        ctx
-                );
-                renderIfMissing(
-                        "templates/test/MapperTest.java.tpl",
-                        testBase.resolve("rs/internal/mappers/" + entity + "MapperTest.java"),
-                        ctx
-                );
-                renderIfMissing(
-                        "templates/test/ExternalMapperTest.java.tpl",
-                        testBase.resolve("rs/external/v1/mappers/" + entity + "MapperTest.java"),
-                        ctx
-                );
 
                 // only for root entities with controllers
                 if (entityDef.api().expose()) {
@@ -333,6 +346,7 @@ public class BatchModelCommand implements Runnable {
         Files.createDirectories(base.resolve("domain/models"));
         Files.createDirectories(base.resolve("domain/daos"));
         Files.createDirectories(base.resolve("domain/services"));
+        Files.createDirectories(base.resolve("rs/common"));
         Files.createDirectories(base.resolve("rs/internal/controllers"));
         Files.createDirectories(base.resolve("rs/internal/mappers"));
         Files.createDirectories(base.resolve("rs/external/v1/controllers"));
@@ -341,11 +355,8 @@ public class BatchModelCommand implements Runnable {
     }
 
     private void ensureTestStructure(Path testBase, Path projectPath) throws Exception {
-        Files.createDirectories(testBase.resolve("domain/services"));
         Files.createDirectories(testBase.resolve("rs/internal/controllers"));
-        Files.createDirectories(testBase.resolve("rs/internal/mappers"));
         Files.createDirectories(testBase.resolve("rs/external/v1/controllers"));
-        Files.createDirectories(testBase.resolve("rs/external/v1/mappers"));
 
         createFileIfMissing(projectPath.resolve("src/test/resources/application.properties"), "");
     }

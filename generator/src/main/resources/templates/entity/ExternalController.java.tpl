@@ -5,11 +5,12 @@ import {{generatedExternalModelPackage}}.{{generatedExternalDto}};
 import {{generatedExternalModelPackage}}.{{generatedExternalSearchCriteria}};
 import {{generatedExternalModelPackage}}.ProblemDetailResponseDTOV1;
 import {{externalMapperPackage}}.{{entity}}Mapper;
-import {{externalMapperPackage}}.ExceptionMapper;
+import {{externalMapperPackage}}.ExternalExceptionMapper;
 import {{domainServicePackage}}.{{entity}}Service;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.persistence.OptimisticLockException;
 import jakarta.transaction.Transactional;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Valid;
@@ -32,7 +33,7 @@ public class {{entity}}Controller implements {{generatedExternalApiInterface}} {
     {{entity}}Mapper mapper;
 
     @Inject
-    ExceptionMapper exceptionMapper;
+    ExternalExceptionMapper exceptionMapper;
 
     @Override
     public Response get{{entity}}ById(String id) {
@@ -60,5 +61,10 @@ public class {{entity}}Controller implements {{generatedExternalApiInterface}} {
     @ServerExceptionMapper
     public RestResponse<ProblemDetailResponseDTOV1> constraint(ConstraintViolationException ex) {
         return exceptionMapper.constraint(ex);
+    }
+
+    @ServerExceptionMapper
+    public RestResponse<ProblemDetailResponseDTOV1> daoException(OptimisticLockException ex) {
+        return exceptionMapper.optimisticLock(ex);
     }
 }

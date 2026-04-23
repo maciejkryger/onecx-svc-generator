@@ -2,13 +2,25 @@ package {{package}}.rs.external.v1.controllers;
 
 import static io.restassured.RestAssured.given;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Set;
+
+import jakarta.inject.Inject;
+import jakarta.persistence.OptimisticLockException;
+import jakarta.validation.ConstraintViolationException;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import {{package}}.AbstractTest;
+import org.tkit.quarkus.jpa.exceptions.ConstraintException;
 import org.tkit.quarkus.security.test.GenerateKeycloakClient;
 
+import {{package}}.AbstractTest;
 import {{generatedModelPackage}}.{{generatedDto}};
 import {{generatedExternalModelPackage}}.{{generatedExternalSearchCriteria}};
 import io.quarkus.test.junit.QuarkusTest;
@@ -23,6 +35,9 @@ class {{entity}}ControllerTest extends AbstractTest {
     String token;
     String idToken;
 
+    @Inject
+    {{entity}}Controller controller;
+
     @BeforeEach
     void setup() {
         token = keycloakClient.getClientAccessToken("{{entityField}}ExternalTestClient");
@@ -30,36 +45,62 @@ class {{entity}}ControllerTest extends AbstractTest {
     }
 
     @Test
-    void get{{entity}}ByIdTest() {
-        String id = create{{entity}}AndReturnId();
+    void getById_shouldReturn200() {
+        String id = createInternalEntity();
 
         given()
                 .auth().oauth2(token)
                 .header(APM_HEADER_PARAM, idToken)
-                .when()
+        .when()
                 .get("/v1/{{resourcePath}}/{id}", id)
-                .then()
+        .then()
                 .statusCode(200);
     }
 
     @Test
-    void search{{resourceOperationPlural}}Test() {
-        create{{entity}}AndReturnId();
+    void search_shouldCoverAllBranches() {
+        createInternalEntity();
 
-        {{testExternalSearchCriteriaBody}}
+        {{generatedExternalSearchCriteria}} criteria = new {{generatedExternalSearchCriteria}}();
 
         given()
                 .auth().oauth2(token)
                 .header(APM_HEADER_PARAM, idToken)
                 .contentType(APPLICATION_JSON)
-                .body(request)
-                .when()
+                .body(criteria)
+        .when()
                 .post("/v1/{{resourcePath}}/search")
-                .then()
+        .then()
                 .statusCode(200);
     }
 
-    private String create{{entity}}AndReturnId() {
+    @Test
+    void shouldMapConstraintException() {
+        ConstraintException ex = mock(ConstraintException.class, RETURNS_DEEP_STUBS);
+        when(ex.getMessage()).thenReturn("constraint");
+        when(ex.getConstraints()).thenReturn("constraint");
+        when(ex.getMessageKey().name()).thenReturn("CONSTRAINT_VIOLATIONS");
+
+        assertEquals(400, controller.exception(ex).getStatus());
+    }
+
+    @Test
+    void shouldMapConstraintViolationException() {
+        var ex = new ConstraintViolationException(java.util.Collections.emptySet());
+
+        assertEquals(400, controller.constraint(ex).getStatus());
+    }
+
+    @Test
+    void shouldMapOptimisticLockException() {
+        var ex = new OptimisticLockException("optimistic");
+
+        assertEquals(409, controller.daoException(ex).getStatus());
+    }
+
+{{testExternalControllerAdditionalMethods}}
+
+    private String createInternalEntity() {
         {{testCreateDtoBody}}
 
         return given()
@@ -67,11 +108,13 @@ class {{entity}}ControllerTest extends AbstractTest {
                 .header(APM_HEADER_PARAM, idToken)
                 .contentType(APPLICATION_JSON)
                 .body(request)
-                .when()
+        .when()
                 .post("/internal/{{resourcePath}}")
-                .then()
+        .then()
                 .statusCode(201)
                 .extract()
                 .path("id");
     }
+
+{{testExternalControllerHelperMethods}}
 }

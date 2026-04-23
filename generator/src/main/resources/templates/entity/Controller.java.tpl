@@ -4,7 +4,7 @@ import {{generatedApiPackage}}.{{generatedApiInterface}};
 import {{generatedModelPackage}}.{{generatedDto}};
 import {{generatedModelPackage}}.{{entity}}SearchCriteriaDTO;
 import {{generatedModelPackage}}.ProblemDetailResponseDTO;
-import {{mapperPackage}}.ExceptionMapper;
+import {{mapperPackage}}.InternalExceptionMapper;
 import {{mapperPackage}}.{{entity}}Mapper;
 import {{domainServicePackage}}.{{entity}}Service;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -31,7 +31,7 @@ public class {{entity}}Controller implements {{generatedApiInterface}} {
     {{entity}}Mapper mapper;
 
     @Inject
-    ExceptionMapper exceptionMapper;
+    InternalExceptionMapper exceptionMapper;
 
     @Override
     public Response create{{entity}}({{generatedDto}} dto) {

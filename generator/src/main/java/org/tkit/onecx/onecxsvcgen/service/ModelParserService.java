@@ -443,7 +443,36 @@ public class ModelParserService {
     }
 
     public String buildRelationUpdateResolvers(List<RelationDef> relations) {
-        return buildRelationCreateResolvers(relations);
+        StringBuilder sb = new StringBuilder();
+
+        for (RelationDef relation : relations) {
+            if (!isResolvableSingleRelation(relation)) {
+                continue;
+            }
+
+            String field = relation.field();
+            String upperField = upper(field);
+            String target = relation.target();
+            String daoVar = lowerFirst(target) + "DAO";
+            String resolvedVar = "resolved" + target;
+
+            sb.append("        if (dto.get").append(upperField).append("() != null) {\n");
+            sb.append("            entity.set").append(upperField).append("(null);\n");
+            sb.append("            if (dto.get").append(upperField).append("().getId() != null && !dto.get")
+                    .append(upperField).append("().getId().isBlank()) {\n");
+            sb.append("                ").append(target).append(" ").append(resolvedVar).append(" = ")
+                    .append(daoVar).append(".findById(dto.get").append(upperField).append("().getId());\n");
+            sb.append("                entity.set").append(upperField).append("(").append(resolvedVar).append(");\n");
+            sb.append("            } else {\n");
+            sb.append("                ").append(target).append(" ").append(resolvedVar)
+                    .append(" = mapper.fromDto(dto.get").append(upperField).append("());\n");
+            sb.append("                ").append(daoVar).append(".create(").append(resolvedVar).append(");\n");
+            sb.append("                entity.set").append(upperField).append("(").append(resolvedVar).append(");\n");
+            sb.append("            }\n");
+            sb.append("        }\n");
+        }
+
+        return sb.toString();
     }
 
     public String buildTestCreateDtoBody(List<FieldDef> fields, List<RelationDef> relations, String dtoClassName) {
@@ -687,6 +716,630 @@ public class ModelParserService {
                     : "java.util.UUID.fromString(\"00000000-0000-0000-0000-000000000001\")";
             default -> updated ? "\"updated-value\"" : "\"test-value\"";
         };
+    }
+
+    public String buildInternalControllerAdditionalMethods(
+            String entity,
+            String resourcePath,
+            List<FieldDef> fields,
+            List<RelationDef> relations) {
+
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("    @Test\n");
+        sb.append("    void get").append(entity).append("ByIdMissingShouldThrowNoSuchElementException() {\n");
+        sb.append("        assertThrows(NoSuchElementException.class, () -> controller.get")
+                .append(entity).append("ById(\"missing-").append(dbName(entity)).append("-id\"));\n");
+        sb.append("    }\n\n");
+
+        RelationDef relation = firstResolvableSingleRelation(relations);
+
+        if (relation != null) {
+            String upperRelation = upperFirst(relation.field());
+            String relationHelper = "create" + upperRelation + "IdThrough" + entity;
+
+            sb.append("    @Test\n");
+            sb.append("    void create").append(entity).append("Without").append(upperRelation).append("ShouldSucceed() {\n");
+            sb.append(buildRequestAssignment("request", fields, null, null, Collections.emptyMap()));
+            sb.append("        String id = given()\n");
+            sb.append("                .auth().oauth2(token)\n");
+            sb.append("                .header(APM_HEADER_PARAM, idToken)\n");
+            sb.append("                .contentType(APPLICATION_JSON)\n");
+            sb.append("                .body(request)\n");
+            sb.append("                .when()\n");
+            sb.append("                .post(\"/internal/").append(resourcePath).append("\")\n");
+            sb.append("                .then()\n");
+            sb.append("                .statusCode(201)\n");
+            sb.append("                .extract()\n");
+            sb.append("                .path(\"id\");\n\n");
+            sb.append("        assertNotNull(id);\n");
+            sb.append("    }\n\n");
+
+            sb.append("    @Test\n");
+            sb.append("    void create").append(entity).append("WithExisting").append(upperRelation).append("IdShouldReuseExisting")
+                    .append(upperRelation).append("() {\n");
+            sb.append("        String relationId = ").append(relationHelper).append("(\"seed-existing\");\n\n");
+            sb.append(buildRequestAssignment(
+                    "request",
+                    fields,
+                    relation,
+                    relationPayloadById("%s"),
+                    Collections.emptyMap()).replace("\"%s\"", "\"%s\""));
+            sb.append("        request = request.formatted(relationId);\n\n");
+            sb.append("        String entityId = given()\n");
+            sb.append("                .auth().oauth2(token)\n");
+            sb.append("                .header(APM_HEADER_PARAM, idToken)\n");
+            sb.append("                .contentType(APPLICATION_JSON)\n");
+            sb.append("                .body(request)\n");
+            sb.append("                .when()\n");
+            sb.append("                .post(\"/internal/").append(resourcePath).append("\")\n");
+            sb.append("                .then()\n");
+            sb.append("                .statusCode(201)\n");
+            sb.append("                .extract()\n");
+            sb.append("                .path(\"id\");\n\n");
+            sb.append("        String returnedRelationId = given()\n");
+            sb.append("                .auth().oauth2(token)\n");
+            sb.append("                .header(APM_HEADER_PARAM, idToken)\n");
+            sb.append("                .when()\n");
+            sb.append("                .get(\"/internal/").append(resourcePath).append("/{id}\", entityId)\n");
+            sb.append("                .then()\n");
+            sb.append("                .statusCode(200)\n");
+            sb.append("                .extract()\n");
+            sb.append("                .path(\"").append(relation.field()).append(".id\");\n\n");
+            sb.append("        assertEquals(relationId, returnedRelationId);\n");
+            sb.append("    }\n\n");
+
+            sb.append("    @Test\n");
+            sb.append("    void create").append(entity).append("WithNew").append(upperRelation).append("ShouldCreateNested")
+                    .append(upperRelation).append("() {\n");
+            sb.append(buildRequestAssignment("request", fields, relation, relationPayloadEmptyObject(relation), Collections.emptyMap()));
+            sb.append("        String entityId = given()\n");
+            sb.append("                .auth().oauth2(token)\n");
+            sb.append("                .header(APM_HEADER_PARAM, idToken)\n");
+            sb.append("                .contentType(APPLICATION_JSON)\n");
+            sb.append("                .body(request)\n");
+            sb.append("                .when()\n");
+            sb.append("                .post(\"/internal/").append(resourcePath).append("\")\n");
+            sb.append("                .then()\n");
+            sb.append("                .statusCode(201)\n");
+            sb.append("                .extract()\n");
+            sb.append("                .path(\"id\");\n\n");
+            sb.append("        String returnedRelationId = given()\n");
+            sb.append("                .auth().oauth2(token)\n");
+            sb.append("                .header(APM_HEADER_PARAM, idToken)\n");
+            sb.append("                .when()\n");
+            sb.append("                .get(\"/internal/").append(resourcePath).append("/{id}\", entityId)\n");
+            sb.append("                .then()\n");
+            sb.append("                .statusCode(200)\n");
+            sb.append("                .extract()\n");
+            sb.append("                .path(\"").append(relation.field()).append(".id\");\n\n");
+            sb.append("        assertNotNull(returnedRelationId);\n");
+            sb.append("    }\n\n");
+
+            sb.append("    @Test\n");
+            sb.append("    void update").append(entity).append("Without").append(upperRelation).append("ShouldSucceed() {\n");
+            sb.append("        String entityId = create").append(entity).append("AndReturnId();\n\n");
+            sb.append(buildRequestAssignment("request", fields, null, null, updatedOverrides(fields)));
+            sb.append("        given()\n");
+            sb.append("                .auth().oauth2(token)\n");
+            sb.append("                .header(APM_HEADER_PARAM, idToken)\n");
+            sb.append("                .contentType(MediaType.APPLICATION_JSON)\n");
+            sb.append("                .body(request)\n");
+            sb.append("                .when()\n");
+            sb.append("                .put(\"/internal/").append(resourcePath).append("/{id}\", entityId)\n");
+            sb.append("                .then()\n");
+            sb.append("                .statusCode(200);\n");
+            sb.append("    }\n\n");
+
+            sb.append("    @Test\n");
+            sb.append("    void update").append(entity).append("WithExisting").append(upperRelation).append("IdShouldReuseExisting")
+                    .append(upperRelation).append("() {\n");
+            sb.append("        String entityId = create").append(entity).append("AndReturnId();\n");
+            sb.append("        String relationId = ").append(relationHelper).append("(\"seed-update-existing\");\n\n");
+            sb.append(buildRequestAssignment(
+                    "request",
+                    fields,
+                    relation,
+                    relationPayloadById("%s"),
+                    updatedOverrides(fields)).replace("\"%s\"", "\"%s\""));
+            sb.append("        request = request.formatted(relationId);\n\n");
+            sb.append("        given()\n");
+            sb.append("                .auth().oauth2(token)\n");
+            sb.append("                .header(APM_HEADER_PARAM, idToken)\n");
+            sb.append("                .contentType(MediaType.APPLICATION_JSON)\n");
+            sb.append("                .body(request)\n");
+            sb.append("                .when()\n");
+            sb.append("                .put(\"/internal/").append(resourcePath).append("/{id}\", entityId)\n");
+            sb.append("                .then()\n");
+            sb.append("                .statusCode(200);\n\n");
+            sb.append("        String returnedRelationId = given()\n");
+            sb.append("                .auth().oauth2(token)\n");
+            sb.append("                .header(APM_HEADER_PARAM, idToken)\n");
+            sb.append("                .when()\n");
+            sb.append("                .get(\"/internal/").append(resourcePath).append("/{id}\", entityId)\n");
+            sb.append("                .then()\n");
+            sb.append("                .statusCode(200)\n");
+            sb.append("                .extract()\n");
+            sb.append("                .path(\"").append(relation.field()).append(".id\");\n\n");
+            sb.append("        assertEquals(relationId, returnedRelationId);\n");
+            sb.append("    }\n\n");
+
+            sb.append("    @Test\n");
+            sb.append("    void update").append(entity).append("WithNew").append(upperRelation).append("ShouldCreateNested")
+                    .append(upperRelation).append("() {\n");
+            sb.append("        String entityId = create").append(entity).append("AndReturnId();\n\n");
+            sb.append(buildRequestAssignment("request", fields, relation, relationPayloadEmptyObject(relation), updatedOverrides(fields)));
+            sb.append("        given()\n");
+            sb.append("                .auth().oauth2(token)\n");
+            sb.append("                .header(APM_HEADER_PARAM, idToken)\n");
+            sb.append("                .contentType(MediaType.APPLICATION_JSON)\n");
+            sb.append("                .body(request)\n");
+            sb.append("                .when()\n");
+            sb.append("                .put(\"/internal/").append(resourcePath).append("/{id}\", entityId)\n");
+            sb.append("                .then()\n");
+            sb.append("                .statusCode(200);\n\n");
+            sb.append("        String returnedRelationId = given()\n");
+            sb.append("                .auth().oauth2(token)\n");
+            sb.append("                .header(APM_HEADER_PARAM, idToken)\n");
+            sb.append("                .when()\n");
+            sb.append("                .get(\"/internal/").append(resourcePath).append("/{id}\", entityId)\n");
+            sb.append("                .then()\n");
+            sb.append("                .statusCode(200)\n");
+            sb.append("                .extract()\n");
+            sb.append("                .path(\"").append(relation.field()).append(".id\");\n\n");
+            sb.append("        assertNotNull(returnedRelationId);\n");
+            sb.append("    }\n\n");
+        }
+
+        sb.append("    @Test\n");
+        sb.append("    void search").append(namingLikePlural(resourcePath)).append("WithEmptyCriteriaShouldUseDefaults() {\n");
+        sb.append("        create").append(entity).append("AndReturnId();\n\n");
+        sb.append("        String criteria = \"\"\"\n");
+        sb.append("                {\n");
+        sb.append("                }\n");
+        sb.append("                \"\"\";\n\n");
+        sb.append("        List<?> result = given()\n");
+        sb.append("                .auth().oauth2(token)\n");
+        sb.append("                .header(APM_HEADER_PARAM, idToken)\n");
+        sb.append("                .contentType(APPLICATION_JSON)\n");
+        sb.append("                .body(criteria)\n");
+        sb.append("                .when()\n");
+        sb.append("                .post(\"/internal/").append(resourcePath).append("/search\")\n");
+        sb.append("                .then()\n");
+        sb.append("                .statusCode(200)\n");
+        sb.append("                .extract()\n");
+        sb.append("                .body()\n");
+        sb.append("                .jsonPath()\n");
+        sb.append("                .getList(\"$\");\n\n");
+        sb.append("        assertNotNull(result);\n");
+        sb.append("    }\n\n");
+
+        FieldDef stringField = firstStringField(fields);
+        if (stringField != null) {
+            String uniqueValue = entity.toLowerCase() + "-search-by-" + stringField.name();
+            sb.append("    @Test\n");
+            sb.append("    void search").append(namingLikePlural(resourcePath))
+                    .append("By").append(upperFirst(stringField.name()))
+                    .append("ShouldUsePredicateAndNormalizeNegativePageNumber() {\n");
+            sb.append(buildRequestAssignment(
+                    "request",
+                    fields,
+                    null,
+                    null,
+                    Map.of(stringField.name(), quoteJson(uniqueValue))));
+            sb.append("        given()\n");
+            sb.append("                .auth().oauth2(token)\n");
+            sb.append("                .header(APM_HEADER_PARAM, idToken)\n");
+            sb.append("                .contentType(APPLICATION_JSON)\n");
+            sb.append("                .body(request)\n");
+            sb.append("                .when()\n");
+            sb.append("                .post(\"/internal/").append(resourcePath).append("\")\n");
+            sb.append("                .then()\n");
+            sb.append("                .statusCode(201);\n\n");
+            sb.append(buildCriteriaAssignment("criteria", -1, 10, stringField, quoteJson(uniqueValue), null, null));
+            sb.append("        List<?> result = given()\n");
+            sb.append("                .auth().oauth2(token)\n");
+            sb.append("                .header(APM_HEADER_PARAM, idToken)\n");
+            sb.append("                .contentType(APPLICATION_JSON)\n");
+            sb.append("                .body(criteria)\n");
+            sb.append("                .when()\n");
+            sb.append("                .post(\"/internal/").append(resourcePath).append("/search\")\n");
+            sb.append("                .then()\n");
+            sb.append("                .statusCode(200)\n");
+            sb.append("                .extract()\n");
+            sb.append("                .body()\n");
+            sb.append("                .jsonPath()\n");
+            sb.append("                .getList(\"$\");\n\n");
+            sb.append("        assertNotNull(result);\n");
+            sb.append("        assertTrue(result.size() >= 1);\n");
+            sb.append("    }\n\n");
+
+            sb.append("    @Test\n");
+            sb.append("    void search").append(namingLikePlural(resourcePath))
+                    .append("WithBlank").append(upperFirst(stringField.name()))
+                    .append("ShouldNotUsePredicate() {\n");
+            sb.append("        create").append(entity).append("AndReturnId();\n\n");
+            sb.append("        String criteria = \"\"\"\n");
+            sb.append("                {\n");
+            sb.append("                  \"pageNumber\": 0,\n");
+            sb.append("                  \"pageSize\": 10,\n");
+            sb.append("                  \"").append(stringField.name()).append("\": \"   \"\n");
+            sb.append("                }\n");
+            sb.append("                \"\"\";\n\n");
+            sb.append("        List<?> result = given()\n");
+            sb.append("                .auth().oauth2(token)\n");
+            sb.append("                .header(APM_HEADER_PARAM, idToken)\n");
+            sb.append("                .contentType(APPLICATION_JSON)\n");
+            sb.append("                .body(criteria)\n");
+            sb.append("                .when()\n");
+            sb.append("                .post(\"/internal/").append(resourcePath).append("/search\")\n");
+            sb.append("                .then()\n");
+            sb.append("                .statusCode(200)\n");
+            sb.append("                .extract()\n");
+            sb.append("                .body()\n");
+            sb.append("                .jsonPath()\n");
+            sb.append("                .getList(\"$\");\n\n");
+            sb.append("        assertNotNull(result);\n");
+            sb.append("    }\n\n");
+        }
+
+        FieldDef numericField = firstNumericField(fields);
+        if (numericField != null) {
+            String numericLiteral = numericSearchLiteral(numericField.type());
+            sb.append("    @Test\n");
+            sb.append("    void search").append(namingLikePlural(resourcePath))
+                    .append("By").append(upperFirst(numericField.name()))
+                    .append("ShouldUsePredicateAndNormalizeZeroPageSize() {\n");
+            sb.append(buildRequestAssignment(
+                    "request",
+                    fields,
+                    null,
+                    null,
+                    Map.of(numericField.name(), numericLiteral)));
+            sb.append("        given()\n");
+            sb.append("                .auth().oauth2(token)\n");
+            sb.append("                .header(APM_HEADER_PARAM, idToken)\n");
+            sb.append("                .contentType(APPLICATION_JSON)\n");
+            sb.append("                .body(request)\n");
+            sb.append("                .when()\n");
+            sb.append("                .post(\"/internal/").append(resourcePath).append("\")\n");
+            sb.append("                .then()\n");
+            sb.append("                .statusCode(201);\n\n");
+            sb.append(buildCriteriaAssignment("criteria", 0, 0, null, null, numericField, numericLiteral));
+            sb.append("        List<?> result = given()\n");
+            sb.append("                .auth().oauth2(token)\n");
+            sb.append("                .header(APM_HEADER_PARAM, idToken)\n");
+            sb.append("                .contentType(APPLICATION_JSON)\n");
+            sb.append("                .body(criteria)\n");
+            sb.append("                .when()\n");
+            sb.append("                .post(\"/internal/").append(resourcePath).append("/search\")\n");
+            sb.append("                .then()\n");
+            sb.append("                .statusCode(200)\n");
+            sb.append("                .extract()\n");
+            sb.append("                .body()\n");
+            sb.append("                .jsonPath()\n");
+            sb.append("                .getList(\"$\");\n\n");
+            sb.append("        assertNotNull(result);\n");
+            sb.append("        assertTrue(result.size() >= 1);\n");
+            sb.append("    }\n\n");
+        }
+
+        return sb.toString();
+    }
+
+    public String buildInternalControllerHelperMethods(
+            String entity,
+            String resourcePath,
+            List<FieldDef> fields,
+            List<RelationDef> relations) {
+
+        RelationDef relation = firstResolvableSingleRelation(relations);
+        if (relation == null) {
+            return "";
+        }
+
+        StringBuilder sb = new StringBuilder();
+        String upperRelation = upperFirst(relation.field());
+
+        sb.append("    private String create").append(upperRelation).append("IdThrough").append(entity)
+                .append("(String ignoredSeedValue) {\n");
+        sb.append(buildRequestAssignment("request", fields, relation, relationPayloadEmptyObject(relation), Collections.emptyMap()));
+        sb.append("        return given()\n");
+        sb.append("                .auth().oauth2(token)\n");
+        sb.append("                .header(APM_HEADER_PARAM, idToken)\n");
+        sb.append("                .contentType(APPLICATION_JSON)\n");
+        sb.append("                .body(request)\n");
+        sb.append("                .when()\n");
+        sb.append("                .post(\"/internal/").append(resourcePath).append("\")\n");
+        sb.append("                .then()\n");
+        sb.append("                .statusCode(201)\n");
+        sb.append("                .extract()\n");
+        sb.append("                .path(\"").append(relation.field()).append(".id\");\n");
+        sb.append("    }\n\n");
+
+        return sb.toString();
+    }
+
+    public String buildExternalControllerAdditionalMethods(
+            String entity,
+            String resourcePath,
+            List<FieldDef> fields,
+            List<RelationDef> relations) {
+
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("    @Test\n");
+        sb.append("    void get").append(entity).append("ByIdMissingShouldThrowNoSuchElementException() {\n");
+        sb.append("        assertThrows(NoSuchElementException.class, () -> controller.get")
+                .append(entity).append("ById(\"missing-").append(dbName(entity)).append("-id\"));\n");
+        sb.append("    }\n\n");
+
+        sb.append("    @Test\n");
+        sb.append("    void search").append(namingLikePlural(resourcePath)).append("WithEmptyCriteriaShouldUseDefaults() {\n");
+        sb.append("        createInternalEntity();\n\n");
+        sb.append("        String criteria = \"\"\"\n");
+        sb.append("                {\n");
+        sb.append("                }\n");
+        sb.append("                \"\"\";\n\n");
+        sb.append("        List<?> result = given()\n");
+        sb.append("                .auth().oauth2(token)\n");
+        sb.append("                .header(APM_HEADER_PARAM, idToken)\n");
+        sb.append("                .contentType(APPLICATION_JSON)\n");
+        sb.append("                .body(criteria)\n");
+        sb.append("                .when()\n");
+        sb.append("                .post(\"/v1/").append(resourcePath).append("/search\")\n");
+        sb.append("                .then()\n");
+        sb.append("                .statusCode(200)\n");
+        sb.append("                .extract()\n");
+        sb.append("                .body()\n");
+        sb.append("                .jsonPath()\n");
+        sb.append("                .getList(\"$\");\n\n");
+        sb.append("        assertNotNull(result);\n");
+        sb.append("    }\n\n");
+
+        FieldDef stringField = firstStringField(fields);
+        if (stringField != null) {
+            sb.append("    @Test\n");
+            sb.append("    void search").append(namingLikePlural(resourcePath))
+                    .append("WithBlank").append(upperFirst(stringField.name()))
+                    .append("ShouldNotUsePredicate() {\n");
+            sb.append("        createInternalEntity();\n\n");
+            sb.append("        String criteria = \"\"\"\n");
+            sb.append("                {\n");
+            sb.append("                  \"pageNumber\": 0,\n");
+            sb.append("                  \"pageSize\": 10,\n");
+            sb.append("                  \"").append(stringField.name()).append("\": \"   \"\n");
+            sb.append("                }\n");
+            sb.append("                \"\"\";\n\n");
+            sb.append("        List<?> result = given()\n");
+            sb.append("                .auth().oauth2(token)\n");
+            sb.append("                .header(APM_HEADER_PARAM, idToken)\n");
+            sb.append("                .contentType(APPLICATION_JSON)\n");
+            sb.append("                .body(criteria)\n");
+            sb.append("                .when()\n");
+            sb.append("                .post(\"/v1/").append(resourcePath).append("/search\")\n");
+            sb.append("                .then()\n");
+            sb.append("                .statusCode(200)\n");
+            sb.append("                .extract()\n");
+            sb.append("                .body()\n");
+            sb.append("                .jsonPath()\n");
+            sb.append("                .getList(\"$\");\n\n");
+            sb.append("        assertNotNull(result);\n");
+            sb.append("    }\n\n");
+        }
+
+        FieldDef numericField = firstNumericField(fields);
+        if (numericField != null) {
+            String numericLiteral = numericSearchLiteral(numericField.type());
+            sb.append("    @Test\n");
+            sb.append("    void search").append(namingLikePlural(resourcePath))
+                    .append("By").append(upperFirst(numericField.name()))
+                    .append("ShouldUsePredicateAndNormalizeZeroPageSize() {\n");
+            sb.append("        createInternalEntity();\n\n");
+            sb.append(buildCriteriaAssignment("criteria", 0, 0, null, null, numericField, numericLiteral));
+            sb.append("        List<?> result = given()\n");
+            sb.append("                .auth().oauth2(token)\n");
+            sb.append("                .header(APM_HEADER_PARAM, idToken)\n");
+            sb.append("                .contentType(APPLICATION_JSON)\n");
+            sb.append("                .body(criteria)\n");
+            sb.append("                .when()\n");
+            sb.append("                .post(\"/v1/").append(resourcePath).append("/search\")\n");
+            sb.append("                .then()\n");
+            sb.append("                .statusCode(200)\n");
+            sb.append("                .extract()\n");
+            sb.append("                .body()\n");
+            sb.append("                .jsonPath()\n");
+            sb.append("                .getList(\"$\");\n\n");
+            sb.append("        assertNotNull(result);\n");
+            sb.append("    }\n\n");
+        }
+
+        return sb.toString();
+    }
+
+    public String buildExternalControllerHelperMethods(
+            String entity,
+            String resourcePath,
+            List<FieldDef> fields,
+            List<RelationDef> relations) {
+        return "";
+    }
+
+    private String buildRequestAssignment(
+            String variableName,
+            List<FieldDef> fields,
+            RelationDef relation,
+            String relationPayload,
+            Map<String, String> overrides) {
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("        String ").append(variableName).append(" = \"\"\"\n");
+        sb.append(buildJsonObject(fields, relation, relationPayload, overrides));
+        sb.append("\n");
+        sb.append("                \"\"\";\n\n");
+        return sb.toString();
+    }
+
+    private String buildCriteriaAssignment(
+            String variableName,
+            Integer pageNumber,
+            Integer pageSize,
+            FieldDef stringField,
+            String stringLiteral,
+            FieldDef numericField,
+            String numericLiteral) {
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("        String ").append(variableName).append(" = \"\"\"\n");
+        sb.append("                {\n");
+
+        List<String> props = new ArrayList<>();
+        if (pageNumber != null) {
+            props.add("                  \"pageNumber\": " + pageNumber);
+        }
+        if (pageSize != null) {
+            props.add("                  \"pageSize\": " + pageSize);
+        }
+        if (stringField != null && stringLiteral != null) {
+            props.add("                  \"" + stringField.name() + "\": " + stringLiteral);
+        }
+        if (numericField != null && numericLiteral != null) {
+            props.add("                  \"" + numericField.name() + "\": " + numericLiteral);
+        }
+
+        for (int i = 0; i < props.size(); i++) {
+            sb.append(props.get(i));
+            if (i < props.size() - 1) {
+                sb.append(",");
+            }
+            sb.append("\n");
+        }
+
+        sb.append("                }\n");
+        sb.append("                \"\"\";\n\n");
+        return sb.toString();
+    }
+
+    private String buildJsonObject(
+            List<FieldDef> fields,
+            RelationDef relation,
+            String relationPayload,
+            Map<String, String> overrides) {
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("                {\n");
+
+        List<String> props = new ArrayList<>();
+        for (FieldDef field : fields) {
+            String value = overrides.getOrDefault(field.name(), jsonLiteral(field.type(), false));
+            props.add("                  \"" + field.name() + "\": " + value);
+        }
+
+        if (relation != null && relationPayload != null) {
+            props.add("                  \"" + relation.field() + "\": " + relationPayload);
+        }
+
+        for (int i = 0; i < props.size(); i++) {
+            sb.append(props.get(i));
+            if (i < props.size() - 1) {
+                sb.append(",");
+            }
+            sb.append("\n");
+        }
+
+        sb.append("                }");
+        return sb.toString();
+    }
+
+    private String relationPayloadById(String idPlaceholder) {
+        return "{\\n                    \\\"id\\\": \\\"" + idPlaceholder + "\\\"\\n                  }";
+    }
+
+    private String relationPayloadEmptyObject(RelationDef relation) {
+        return "{\\n                    \\\"name\\\": \\\"test-" + relation.field() + "\\\"\\n                  }";
+    }
+
+    private Map<String, String> updatedOverrides(List<FieldDef> fields) {
+        Map<String, String> result = new java.util.HashMap<>();
+        for (FieldDef field : fields) {
+            result.put(field.name(), jsonLiteral(field.type(), true));
+        }
+        return result;
+    }
+
+    private FieldDef firstStringField(List<FieldDef> fields) {
+        for (FieldDef field : fields) {
+            if ("String".equals(field.type())) {
+                return field;
+            }
+        }
+        return null;
+    }
+
+    private FieldDef firstNumericField(List<FieldDef> fields) {
+        for (FieldDef field : fields) {
+            if ("BigDecimal".equals(field.type())
+                    || "Integer".equals(field.type())
+                    || "int".equals(field.type())
+                    || "Long".equals(field.type())
+                    || "long".equals(field.type())) {
+                return field;
+            }
+        }
+        return null;
+    }
+
+    private RelationDef firstResolvableSingleRelation(List<RelationDef> relations) {
+        for (RelationDef relation : relations) {
+            if (isResolvableSingleRelation(relation)) {
+                return relation;
+            }
+        }
+        return null;
+    }
+
+    private String jsonLiteral(String type, boolean updated) {
+        return switch (type) {
+            case "String" -> updated ? quoteJson("updated-value") : quoteJson("test-value");
+            case "Integer", "int" -> updated ? "2" : "1";
+            case "Long", "long" -> updated ? "2" : "1";
+            case "BigDecimal" -> updated ? "2.0" : "1.0";
+            case "Boolean", "boolean" -> updated ? "false" : "true";
+            case "LocalDate" -> updated ? quoteJson("2024-02-02") : quoteJson("2024-01-01");
+            case "LocalDateTime" -> updated ? quoteJson("2024-02-02T12:00:00") : quoteJson("2024-01-01T10:00:00");
+            case "UUID" -> updated
+                    ? quoteJson("00000000-0000-0000-0000-000000000002")
+                    : quoteJson("00000000-0000-0000-0000-000000000001");
+            default -> updated ? quoteJson("updated-value") : quoteJson("test-value");
+        };
+    }
+
+    private String numericSearchLiteral(String type) {
+        return switch (type) {
+            case "Integer", "int" -> "123";
+            case "Long", "long" -> "123";
+            case "BigDecimal" -> "1234.56";
+            default -> "1";
+        };
+    }
+
+    private String quoteJson(String value) {
+        return "\"" + value + "\"";
+    }
+
+    private String namingLikePlural(String resourcePath) {
+        if (resourcePath == null || resourcePath.isBlank()) {
+            return "Entities";
+        }
+        String normalized = resourcePath.replace("-", " ");
+        String[] parts = normalized.split("\\s+");
+        StringBuilder sb = new StringBuilder();
+        for (String part : parts) {
+            if (!part.isBlank()) {
+                sb.append(upperFirst(part));
+            }
+        }
+        return sb.toString();
     }
 
     public String modelPackage(String pkg) {

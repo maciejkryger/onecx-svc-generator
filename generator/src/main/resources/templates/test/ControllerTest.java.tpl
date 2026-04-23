@@ -2,15 +2,28 @@ package {{package}}.rs.internal.controllers;
 
 import static io.restassured.RestAssured.given;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import java.util.List;
+import java.util.NoSuchElementException;
+
+import jakarta.inject.Inject;
+import jakarta.persistence.OptimisticLockException;
+import jakarta.validation.ConstraintViolationException;
 import jakarta.ws.rs.core.MediaType;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import {{package}}.AbstractTest;
+import org.tkit.quarkus.jpa.exceptions.ConstraintException;
 import org.tkit.quarkus.security.test.GenerateKeycloakClient;
 
+import {{package}}.AbstractTest;
 import {{generatedModelPackage}}.{{generatedDto}};
 import {{generatedModelPackage}}.{{generatedInternalSearchCriteria}};
 import io.quarkus.test.junit.QuarkusTest;
@@ -24,6 +37,9 @@ class {{entity}}ControllerTest extends AbstractTest {
 
     String token;
     String idToken;
+
+    @Inject
+    {{entity}}Controller controller;
 
     @BeforeEach
     void setup() {
@@ -104,6 +120,41 @@ class {{entity}}ControllerTest extends AbstractTest {
                 .statusCode(200);
     }
 
+{{testInternalControllerAdditionalMethods}}
+
+    @Test
+    void shouldMapConstraintExceptionWithRealMapper() {
+        ConstraintException ex = mock(ConstraintException.class, RETURNS_DEEP_STUBS);
+        when(ex.getMessage()).thenReturn("constraint");
+        when(ex.getConstraints()).thenReturn("constraint");
+        when(ex.getMessageKey().name()).thenReturn("CONSTRAINT_VIOLATIONS");
+
+        var response = controller.exception(ex);
+
+        assertNotNull(response);
+        assertEquals(400, response.getStatus());
+    }
+
+    @Test
+    void shouldMapConstraintViolationExceptionWithRealMapper() {
+        ConstraintViolationException ex = new ConstraintViolationException(java.util.Collections.emptySet());
+
+        var response = controller.constraint(ex);
+
+        assertNotNull(response);
+        assertEquals(400, response.getStatus());
+    }
+
+    @Test
+    void shouldMapOptimisticLockExceptionWithRealMapper() {
+        OptimisticLockException ex = new OptimisticLockException("optimistic-lock");
+
+        var response = controller.daoException(ex);
+
+        assertNotNull(response);
+        assertEquals(400, response.getStatus());
+    }
+
     private String create{{entity}}AndReturnId() {
         {{testCreateDtoBody}}
 
@@ -119,4 +170,6 @@ class {{entity}}ControllerTest extends AbstractTest {
                 .extract()
                 .path("id");
     }
+
+{{testInternalControllerHelperMethods}}
 }
