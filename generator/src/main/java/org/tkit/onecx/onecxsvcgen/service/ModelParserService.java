@@ -275,42 +275,14 @@ public class ModelParserService {
             String upper = upper(f.name());
             String getter = "criteria.get" + upper + "()";
 
-            switch (f.type()) {
-                case "String" -> {
-                    sb.append("        if (criteria != null && ")
-                            .append(getter)
-                            .append(" != null && !")
-                            .append(getter)
-                            .append(".isBlank()) {\n");
-                    sb.append("            predicates.add(cb.like(cb.lower(root.get(\"")
-                            .append(f.name())
-                            .append("\")), \"%\" + ")
-                            .append(getter)
-                            .append(".toLowerCase() + \"%\"));\n");
-                    sb.append("        }\n");
-                }
-                case "Integer", "int", "Long", "long", "BigDecimal", "Boolean", "boolean", "LocalDate", "LocalDateTime", "UUID" -> {
-                    sb.append("        if (criteria != null && ")
-                            .append(getter)
-                            .append(" != null) {\n");
-                    sb.append("            predicates.add(cb.equal(root.get(\"")
-                            .append(f.name())
-                            .append("\"), ")
-                            .append(getter)
-                            .append("));\n");
-                    sb.append("        }\n");
-                }
-                default -> {
-                    sb.append("        if (criteria != null && ")
-                            .append(getter)
-                            .append(" != null) {\n");
-                    sb.append("            predicates.add(cb.equal(root.get(\"")
-                            .append(f.name())
-                            .append("\"), ")
-                            .append(getter)
-                            .append("));\n");
-                    sb.append("        }\n");
-                }
+            if ("String".equals(f.type())) {
+                sb.append("            if (").append(getter).append(" != null && !").append(getter).append(".isBlank()) {\n");
+                sb.append("                predicates.add(cb.like(cb.lower(root.get(\"").append(f.name()).append("\")), \"%\" + ").append(getter).append(".toLowerCase() + \"%\"));\n");
+                sb.append("            }\n");
+            } else {
+                sb.append("            if (").append(getter).append(" != null) {\n");
+                sb.append("                predicates.add(cb.equal(root.get(\"").append(f.name()).append("\"), ").append(getter).append("));\n");
+                sb.append("            }\n");
             }
         }
 
@@ -946,7 +918,7 @@ public class ModelParserService {
         sb.append("                .extract()\n");
         sb.append("                .body()\n");
         sb.append("                .jsonPath()\n");
-        sb.append("                .getList(\"$\");\n\n");
+        sb.append("                .getList(\"stream\");\n\n");
         sb.append("        assertNotNull(result);\n");
         sb.append("    }\n\n");
 
@@ -985,7 +957,7 @@ public class ModelParserService {
             sb.append("                .extract()\n");
             sb.append("                .body()\n");
             sb.append("                .jsonPath()\n");
-            sb.append("                .getList(\"$\");\n\n");
+            sb.append("                .getList(\"stream\");\n\n");
             sb.append("        assertNotNull(result);\n");
             sb.append("        assertTrue(result.size() >= 1);\n");
             sb.append("    }\n\n");
@@ -1014,7 +986,7 @@ public class ModelParserService {
             sb.append("                .extract()\n");
             sb.append("                .body()\n");
             sb.append("                .jsonPath()\n");
-            sb.append("                .getList(\"$\");\n\n");
+            sb.append("                .getList(\"stream\");\n\n");
             sb.append("        assertNotNull(result);\n");
             sb.append("    }\n\n");
         }
@@ -1054,7 +1026,7 @@ public class ModelParserService {
             sb.append("                .extract()\n");
             sb.append("                .body()\n");
             sb.append("                .jsonPath()\n");
-            sb.append("                .getList(\"$\");\n\n");
+            sb.append("                .getList(\"stream\");\n\n");
             sb.append("        assertNotNull(result);\n");
             sb.append("        assertTrue(result.size() >= 1);\n");
             sb.append("    }\n\n");
@@ -1083,7 +1055,7 @@ public class ModelParserService {
         sb.append("                .extract()\n");
         sb.append("                .body()\n");
         sb.append("                .jsonPath()\n");
-        sb.append("                .getList(\"$\");\n\n");
+        sb.append("                .getList(\"stream\");\n\n");
         sb.append("        assertNotNull(result);\n");
         sb.append("        assertTrue(result.size() >= 1);\n");
         sb.append("    }\n\n");
@@ -1157,7 +1129,7 @@ public class ModelParserService {
         sb.append("                .extract()\n");
         sb.append("                .body()\n");
         sb.append("                .jsonPath()\n");
-        sb.append("                .getList(\"$\");\n\n");
+        sb.append("                .getList(\"stream\");\n\n");
         sb.append("        assertNotNull(result);\n");
         sb.append("    }\n\n");
 
@@ -1187,7 +1159,7 @@ public class ModelParserService {
             sb.append("                .extract()\n");
             sb.append("                .body()\n");
             sb.append("                .jsonPath()\n");
-            sb.append("                .getList(\"$\");\n\n");
+            sb.append("                .getList(\"stream\");\n\n");
             sb.append("        assertNotNull(result);\n");
             sb.append("    }\n\n");
         }
@@ -1213,7 +1185,7 @@ public class ModelParserService {
             sb.append("                .extract()\n");
             sb.append("                .body()\n");
             sb.append("                .jsonPath()\n");
-            sb.append("                .getList(\"$\");\n\n");
+            sb.append("                .getList(\"stream\");\n\n");
             sb.append("        assertNotNull(result);\n");
             sb.append("    }\n\n");
         }

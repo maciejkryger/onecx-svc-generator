@@ -1,16 +1,30 @@
 package {{mapperPackage}};
 
 import {{generatedModelPackage}}.{{generatedDto}};
+import {{generatedModelPackage}}.{{generatedPageResultDto}};
 import {{modelPackage}}.{{entity}};
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
+import org.tkit.quarkus.jpa.daos.PageResult;
 import org.tkit.quarkus.rs.mappers.OffsetDateTimeMapper;
+
+import java.util.stream.Collectors;
 
 @Mapper(uses = { OffsetDateTimeMapper.class })
 public interface {{entity}}Mapper {
 
     {{generatedDto}} toDto({{entity}} entity);
+
+    default {{generatedPageResultDto}} toPageResultDto(PageResult<{{entity}}> page) {
+        {{generatedPageResultDto}} dto = new {{generatedPageResultDto}}();
+        dto.setStream(page.getStream().map(this::toDto).collect(Collectors.toList()));
+        dto.setTotalElements(page.getTotalElements());
+        dto.setNumber((int) page.getNumber());
+        dto.setSize((int) page.getSize());
+        dto.setTotalPages((int) page.getTotalPages());
+        return dto;
+    }
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "tenantId", ignore = true)

@@ -9,8 +9,9 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
-import java.util.List;
 import java.util.NoSuchElementException;
+
+import org.tkit.quarkus.jpa.daos.PageResult;
 
 @ApplicationScoped
 public class {{entity}}Service {
@@ -22,7 +23,7 @@ public class {{entity}}Service {
     {{entity}}Mapper mapper;
 
 {{relationDaoInjections}}
-    public List<{{entity}}> findByCriteria({{entity}}SearchCriteriaDTO criteria) {
+    public PageResult<{{entity}}> findByCriteria({{entity}}SearchCriteriaDTO criteria) {
         return dao.findByCriteria(criteria);
     }
 

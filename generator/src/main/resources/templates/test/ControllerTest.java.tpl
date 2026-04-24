@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
@@ -26,6 +27,7 @@ import org.tkit.quarkus.security.test.GenerateKeycloakClient;
 import {{package}}.AbstractTest;
 import {{generatedModelPackage}}.{{generatedDto}};
 import {{generatedModelPackage}}.{{generatedInternalSearchCriteria}};
+import {{daoPackage}}.{{entity}}DAO;
 import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
@@ -40,6 +42,9 @@ class {{entity}}ControllerTest extends AbstractTest {
 
     @Inject
     {{entity}}Controller controller;
+
+    @Inject
+    {{entity}}DAO dao;
 
     @BeforeEach
     void setup() {
@@ -118,6 +123,37 @@ class {{entity}}ControllerTest extends AbstractTest {
                 .post("/internal/{{resourcePath}}/search")
                 .then()
                 .statusCode(200);
+    }
+
+    @Test
+    void searchWithExplicitPageNumberAndSizeShouldSucceed() {
+        {{generatedInternalSearchCriteria}} criteria = new {{generatedInternalSearchCriteria}}();
+        criteria.setPageNumber(1);
+        criteria.setPageSize(5);
+
+        given()
+                .auth().oauth2(token)
+                .header(APM_HEADER_PARAM, idToken)
+                .contentType(APPLICATION_JSON)
+                .body(criteria)
+                .when()
+                .post("/internal/{{resourcePath}}/search")
+                .then()
+                .statusCode(200);
+    }
+
+    @Test
+    void searchWithNullBodyShouldTriggerDaoCatchAndReturnError() {
+        int status = given()
+                .auth().oauth2(token)
+                .header(APM_HEADER_PARAM, idToken)
+                .when()
+                .post("/internal/{{resourcePath}}/search")
+                .then()
+                .extract()
+                .statusCode();
+
+        assertTrue(status >= 400);
     }
 
 {{testInternalControllerAdditionalMethods}}

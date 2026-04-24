@@ -44,9 +44,8 @@ public class {{entity}}Controller implements {{generatedExternalApiInterface}} {
     public Response search{{resourceOperationPlural}}(
             @Valid {{generatedExternalSearchCriteria}} criteria) {
 
-        List<{{generatedExternalDto}}> result = service
-                .findByCriteria(mapper.toCriteria(criteria))
-                .stream()
+        var pageResult = service.findByCriteria(mapper.toCriteria(criteria));
+        List<{{generatedExternalDto}}> result = pageResult.getStream()
                 .map(mapper::toDto)
                 .toList();
 

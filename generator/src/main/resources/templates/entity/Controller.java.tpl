@@ -18,7 +18,6 @@ import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 import org.tkit.quarkus.jpa.exceptions.ConstraintException;
 
-import java.util.List;
 
 @ApplicationScoped
 @Transactional(Transactional.TxType.NOT_SUPPORTED)
@@ -61,11 +60,8 @@ public class {{entity}}Controller implements {{generatedApiInterface}} {
     @Override
     public Response search{{resourceOperationPlural}}(
             @Valid {{entity}}SearchCriteriaDTO criteria) {
-        List<{{generatedDto}}> result = service.findByCriteria(criteria)
-                .stream()
-                .map(mapper::toDto)
-                .toList();
-        return Response.ok(result).build();
+        var result = service.findByCriteria(criteria);
+        return Response.ok(mapper.toPageResultDto(result)).build();
     }
 
     @ServerExceptionMapper

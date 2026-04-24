@@ -165,6 +165,7 @@ public class AddEntityCommand implements Runnable {
             ctx.put("generatedApiInterface", internalApiInterface);
             ctx.put("generatedDto", entity + "DTO");
             ctx.put("generatedInternalSearchCriteria", entity + "SearchCriteriaDTO");
+            ctx.put("generatedPageResultDto", entity + "PageResultDTO");
 
             // EXTERNAL contract bindings
             ctx.put("generatedExternalApiPackage", models.generatedApiPackage(pkg));

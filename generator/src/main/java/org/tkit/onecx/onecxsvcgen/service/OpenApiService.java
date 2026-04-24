@@ -60,6 +60,9 @@ public class OpenApiService {
         upsertSearchCriteriaSchema(internalSpec, entity, fields);
         upsertSearchCriteriaSchema(externalSpec, entity, fields);
 
+        upsertPageResultSchema(internalSpec, entity);
+        upsertPageResultSchema(externalSpec, entity);
+
         if (apiDef.expose()) {
             createInternalPaths(internalSpec, resourcePath, internalTag, entity, scopePrefix);
             createExternalPaths(externalSpec, resourcePath, externalTag, entity, scopePrefix);
@@ -117,6 +120,29 @@ public class OpenApiService {
         }
 
         schemas.put(entity + "SearchCriteria", schema);
+    }
+
+    @SuppressWarnings("unchecked")
+    private void upsertPageResultSchema(Map<String, Object> spec, String entity) {
+        Map<String, Object> components =
+                (Map<String, Object>) spec.computeIfAbsent("components", k -> new LinkedHashMap<>());
+        Map<String, Object> schemas =
+                (Map<String, Object>) components.computeIfAbsent("schemas", k -> new LinkedHashMap<>());
+
+        Map<String, Object> schema = new LinkedHashMap<>();
+        schema.put("type", "object");
+        Map<String, Object> properties = new LinkedHashMap<>();
+        properties.put("totalElements", Map.of("type", "integer", "format", "int64"));
+        properties.put("totalPages", Map.of("type", "integer", "format", "int32"));
+        properties.put("number", Map.of("type", "integer", "format", "int32"));
+        properties.put("size", Map.of("type", "integer", "format", "int32"));
+        Map<String, Object> streamProp = new LinkedHashMap<>();
+        streamProp.put("type", "array");
+        streamProp.put("items", Map.of("$ref", "#/components/schemas/" + entity));
+        properties.put("stream", streamProp);
+        schema.put("properties", properties);
+
+        schemas.put(entity + "PageResult", schema);
     }
 
     @SuppressWarnings("unchecked")
@@ -309,7 +335,7 @@ public class OpenApiService {
         op.put("requestBody", requestBody);
 
         Map<String, Object> responses = new LinkedHashMap<>();
-        responses.put("200", successArrayResponse("Search result for " + naming.pluralPath(entity), entity));
+        responses.put("200", successObjectResponse("Search result for " + naming.pluralPath(entity), entity + "PageResult"));
         responses.put("400", problemResponse("Validation failed"));
         op.put("responses", responses);
 

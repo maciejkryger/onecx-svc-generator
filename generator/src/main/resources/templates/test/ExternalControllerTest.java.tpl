@@ -1,15 +1,14 @@
 package {{package}}.rs.external.v1.controllers;
 
+import java.util.List;
+import java.util.NoSuchElementException;
+
 import static io.restassured.RestAssured.given;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Set;
 
 import jakarta.inject.Inject;
 import jakarta.persistence.OptimisticLockException;
@@ -23,7 +22,9 @@ import org.tkit.quarkus.security.test.GenerateKeycloakClient;
 import {{package}}.AbstractTest;
 import {{generatedModelPackage}}.{{generatedDto}};
 import {{generatedExternalModelPackage}}.{{generatedExternalSearchCriteria}};
+import {{daoPackage}}.{{entity}}DAO;
 import io.quarkus.test.junit.QuarkusTest;
+import org.mockito.Mockito;
 
 @QuarkusTest
 @GenerateKeycloakClient(
@@ -75,6 +76,41 @@ class {{entity}}ControllerTest extends AbstractTest {
     }
 
     @Test
+    void searchWithExplicitPageNumberAndSizeShouldSucceed() {
+        createInternalEntity();
+
+        {{generatedExternalSearchCriteria}} criteria = new {{generatedExternalSearchCriteria}}();
+        criteria.setPageNumber(2);
+        criteria.setPageSize(5);
+
+        given()
+                .auth().oauth2(token)
+                .header(APM_HEADER_PARAM, idToken)
+                .contentType(APPLICATION_JSON)
+                .body(criteria)
+        .when()
+                .post("/v1/{{resourcePath}}/search")
+        .then()
+                .statusCode(200);
+    }
+
+    @Test
+    void searchWithNullBodyShouldTriggerDaoCatchAndReturnError() {
+        createInternalEntity();
+
+        int status = given()
+                .auth().oauth2(token)
+                .header(APM_HEADER_PARAM, idToken)
+                .when()
+                .post("/v1/{{resourcePath}}/search")
+                .then()
+                .extract()
+                .statusCode();
+
+        assertTrue(status >= 400);
+    }
+
+    @Test
     void shouldMapConstraintException() {
         ConstraintException ex = mock(ConstraintException.class, RETURNS_DEEP_STUBS);
         when(ex.getMessage()).thenReturn("constraint");
@@ -116,5 +152,7 @@ class {{entity}}ControllerTest extends AbstractTest {
                 .path("id");
     }
 
+    // DAO exception test moved to a dedicated DAO test in the DAO package because
+    // getEntityManager() has protected access and must be referenced from the DAO package.
 {{testExternalControllerHelperMethods}}
 }
