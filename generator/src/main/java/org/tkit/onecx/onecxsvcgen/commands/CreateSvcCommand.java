@@ -59,8 +59,36 @@ public class CreateSvcCommand implements Runnable {
     @Override
     public void run() {
         try {
-            if (parentVersion == null || parentVersion.isBlank()) {
+            boolean parentProvided = parentVersion != null && !parentVersion.isBlank();
+            if (!parentProvided) {
+                // when parent version is not provided, resolve latest release tag
                 parentVersion = releases.latestReleaseTag("onecx", "onecx-quarkus3-parent", "2.4.0");
+            }
+
+            // decide whether to apply new POM changes based on parent version
+            boolean useNewPom = false;
+            try {
+                // try to extract numeric version X.Y.Z from tag
+                String v = parentVersion.trim();
+                java.util.regex.Matcher m = java.util.regex.Pattern.compile("(\\d+)\\.(\\d+)(?:\\.(\\d+))?").matcher(v);
+                if (m.find()) {
+                    int major = Integer.parseInt(m.group(1));
+                    int minor = Integer.parseInt(m.group(2));
+                    int patch = m.group(3) != null ? Integer.parseInt(m.group(3)) : 0;
+                    int verNum = major * 10000 + minor * 100 + patch; // e.g. 3.1.0 -> 30100
+                    if (!parentProvided) {
+                        // default (latest) -> treat as new POM
+                        useNewPom = true;
+                    } else {
+                        // apply new POM for versions >= 3.1.0
+                        useNewPom = verNum >= (3 * 10000 + 1 * 100 + 0);
+                    }
+                } else {
+                    // if we can't parse the version and it was not provided, assume latest -> new pom
+                    useNewPom = !parentProvided;
+                }
+            } catch (Exception ignore) {
+                useNewPom = !parentProvided;
             }
 
             Path baseDir = (outputDir != null ? outputDir : Path.of(".")).toAbsolutePath().normalize();
@@ -75,6 +103,13 @@ public class CreateSvcCommand implements Runnable {
             ctx.put("group", group);
             ctx.put("package", pkg);
             ctx.put("parentVersion", parentVersion);
+            // project version for generated POMs (user requested override for all versions)
+            ctx.put("projectVersion", "999-SNAPSHOT");
+            // packaging section to insert under <version> when using new POM layout
+            ctx.put("packagingSection", useNewPom ? "<packaging>quarkus</packaging>\n    " : "");
+            // junit artifact ids depend on parent version
+            ctx.put("junitArtifact", useNewPom ? "quarkus-junit" : "quarkus-junit5");
+            ctx.put("junitMockitoArtifact", useNewPom ? "quarkus-junit-mockito" : "quarkus-junit5-mockito");
             ctx.put("scopePrefix", scopePrefix);
 
             ctx.put("generatedApiPackage", "gen." + pkg + ".rs.external.v1");

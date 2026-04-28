@@ -11,7 +11,8 @@
 
     <groupId>{{group}}</groupId>
     <artifactId>{{name}}</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>{{projectVersion}}</version>
+    {{packagingSection}}
     <name>{{name}}</name>
     <description>{{name}} - OneCX Backend Service</description>
 
@@ -118,12 +119,12 @@
         <!-- Tests -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-junit5</artifactId>
+            <artifactId>{{junitArtifact}}</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-junit5-mockito</artifactId>
+            <artifactId>{{junitMockitoArtifact}}</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
