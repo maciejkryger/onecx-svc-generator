@@ -62,13 +62,15 @@ public class CreateSvcCommand implements Runnable {
             boolean parentProvided = parentVersion != null && !parentVersion.isBlank();
             if (!parentProvided) {
                 // when parent version is not provided, resolve latest release tag
-                parentVersion = releases.latestReleaseTag("onecx", "onecx-quarkus3-parent", "2.4.0");
+                parentVersion = releases.latestReleaseTag("onecx", "onecx-quarkus3-parent", "3.1.0");
             }
 
             // decide whether to apply new POM changes based on parent version
+            // If the resolved or provided parent version is >= 3.1.0 we enable the new POM layout;
+            // otherwise keep the legacy layout. If no parent was provided we resolve latest and
+            // apply the same rule against the resolved version.
             boolean useNewPom = false;
             try {
-                // try to extract numeric version X.Y.Z from tag
                 String v = parentVersion.trim();
                 java.util.regex.Matcher m = java.util.regex.Pattern.compile("(\\d+)\\.(\\d+)(?:\\.(\\d+))?").matcher(v);
                 if (m.find()) {
@@ -76,19 +78,10 @@ public class CreateSvcCommand implements Runnable {
                     int minor = Integer.parseInt(m.group(2));
                     int patch = m.group(3) != null ? Integer.parseInt(m.group(3)) : 0;
                     int verNum = major * 10000 + minor * 100 + patch; // e.g. 3.1.0 -> 30100
-                    if (!parentProvided) {
-                        // default (latest) -> treat as new POM
-                        useNewPom = true;
-                    } else {
-                        // apply new POM for versions >= 3.1.0
-                        useNewPom = verNum >= (3 * 10000 + 1 * 100 + 0);
-                    }
-                } else {
-                    // if we can't parse the version and it was not provided, assume latest -> new pom
-                    useNewPom = !parentProvided;
+                    useNewPom = verNum >= (3 * 10000 + 1 * 100 + 0);
                 }
             } catch (Exception ignore) {
-                useNewPom = !parentProvided;
+                useNewPom = false;
             }
 
             Path baseDir = (outputDir != null ? outputDir : Path.of(".")).toAbsolutePath().normalize();

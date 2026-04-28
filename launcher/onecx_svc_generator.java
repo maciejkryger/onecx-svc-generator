@@ -16,7 +16,7 @@ class onecx_svc_generator {
 
     private static final String REPO_OWNER = "maciejkryger";
     private static final String REPO_NAME = "onecx-svc-generator";
-    private static final String FALLBACK_VERSION = "1.0.0";
+    private static final String FALLBACK_VERSION = "3.1.0";
 
     public static void main(String... args) throws Exception {
         String version = System.getProperty("onecx.svc.generator.version");
