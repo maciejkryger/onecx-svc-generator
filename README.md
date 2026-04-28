@@ -50,8 +50,9 @@ java -jar onecx-svc-generator/generator/target/onecx-svc-generator-1.0.0-runner.
   --name onecx-demo-svc   \
   --group org.tkit.onecx   \
   --package org.tkit.onecx.demo
+  --parent-version 3.2.0
 ```
-#### with autobuild - recomended for development, as it compiles the generated code after each change:
+#### with autobuild - recommended for development, as it compiles the generated code after each change:
 ```bash 
 cd ../
 
@@ -60,6 +61,18 @@ java -jar onecx-svc-generator/generator/target/onecx-svc-generator-1.0.0-runner.
   --group org.tkit.onecx \
   --package org.tkit.onecx.demo \
   --build true
+```
+
+#### with autobuild and stable specific parent version - recommended for development, and this parent version is last with java 21:
+```bash 
+cd ../
+
+java -jar onecx-svc-generator/generator/target/onecx-svc-generator-1.0.0-runner.jar create-svc \
+  --name onecx-demo-svc \
+  --group org.tkit.onecx \
+  --package org.tkit.onecx.demo \
+  --build true \
+  --parent-version 2.5.0
 ```
 
 ### 3.3. Add a root entity (creates API + controller + mapper + domain layer)

@@ -187,7 +187,7 @@ public class AddEntityCommand implements Runnable {
             ctx.put("fieldsDecl", models.buildFieldsDecl(fields));
             ctx.put("relationsDecl", models.buildRelationsDecl(relations, pkg));
             ctx.put("liquibaseColumns", models.buildLiquibaseColumns(fields, relations));
-            ctx.put("findByCriteriaPredicates", models.buildFindByCriteriaPredicates(fields));
+            ctx.put("findByCriteriaPredicates", models.buildFindByCriteriaPredicates(entity, fields));
             ctx.put("relationMappingMethods", models.buildRelationMappingMethods(relations, pkg));
 
             ctx.put("serviceRelationImports", models.buildServiceRelationImports(relations, pkg));

@@ -29,6 +29,7 @@ import {{generatedModelPackage}}.{{generatedDto}};
 import {{generatedModelPackage}}.{{generatedInternalSearchCriteria}};
 import {{daoPackage}}.{{entity}}DAO;
 import io.quarkus.test.junit.QuarkusTest;
+import io.restassured.response.Response;
 
 @QuarkusTest
 @GenerateKeycloakClient(

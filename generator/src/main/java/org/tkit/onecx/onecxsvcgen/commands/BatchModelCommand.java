@@ -158,7 +158,7 @@ public class BatchModelCommand implements Runnable {
                 ctx.put("fieldsDecl", models.buildFieldsDecl(entityDef.fields()));
                 ctx.put("relationsDecl", models.buildRelationsDecl(entityDef.relations(), pkg));
                 ctx.put("liquibaseColumns", models.buildLiquibaseColumns(entityDef.fields(), entityDef.relations()));
-                ctx.put("findByCriteriaPredicates", models.buildFindByCriteriaPredicates(entityDef.fields()));
+                ctx.put("findByCriteriaPredicates", models.buildFindByCriteriaPredicates(entity, entityDef.fields()));
                 ctx.put("relationMappingMethods", models.buildRelationMappingMethods(entityDef.relations(), pkg));
 
                 ctx.put("serviceRelationImports", models.buildServiceRelationImports(entityDef.relations(), pkg));

@@ -24,7 +24,7 @@ import {{generatedModelPackage}}.{{generatedDto}};
 import {{generatedExternalModelPackage}}.{{generatedExternalSearchCriteria}};
 import {{daoPackage}}.{{entity}}DAO;
 import io.quarkus.test.junit.QuarkusTest;
-import org.mockito.Mockito;
+import io.restassured.response.Response;
 
 @QuarkusTest
 @GenerateKeycloakClient(
