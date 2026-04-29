@@ -15,7 +15,8 @@
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <quarkus.platform.version>3.32.3</quarkus.platform.version>
-        <quarkus.package.type>uber-jar</quarkus.package.type>
+        <quarkus.package.jar.enabled>true</quarkus.package.jar.enabled>
+        <quarkus.package.jar.type>uber-jar</quarkus.package.jar.type>
         <surefire-plugin.version>3.5.2</surefire-plugin.version>
     </properties>
 

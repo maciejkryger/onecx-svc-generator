@@ -189,13 +189,13 @@ public class OpenApiService {
         paths.put(collectionPath, collectionOps);
 
         Map<String, Object> itemOps = new LinkedHashMap<>();
-        itemOps.put("get", createGetOperation(tag, entity, scopePrefix));
+        itemOps.put("get", createGetOperation(tag, entity, scopePrefix, null));
         itemOps.put("put", createUpdateOperation(tag, entity, scopePrefix));
         itemOps.put("delete", createDeleteOperation(tag, entity, scopePrefix));
         paths.put(itemPath, itemOps);
 
         Map<String, Object> searchOps = new LinkedHashMap<>();
-        searchOps.put("post", createSearchOperation(tag, entity, scopePrefix));
+        searchOps.put("post", createSearchOperation(tag, entity, scopePrefix, null));
         paths.put(searchPath, searchOps);
     }
 
@@ -208,23 +208,28 @@ public class OpenApiService {
         Map<String, Object> paths =
                 (Map<String, Object>) spec.computeIfAbsent("paths", k -> new LinkedHashMap<>());
 
-        String itemPath = "/v1/" + resourcePath + "/{id}";
-        String searchPath = "/v1/" + resourcePath + "/search";
+        String versionSuffix = "v1";
+        String itemPath = "/" + versionSuffix + "/" + resourcePath + "/{id}";
+        String searchPath = "/" + versionSuffix + "/" + resourcePath + "/search";
 
         Map<String, Object> itemOps = new LinkedHashMap<>();
-        itemOps.put("get", createGetOperation(tag, entity, scopePrefix));
+        itemOps.put("get", createGetOperation(tag, entity, scopePrefix, versionSuffix.toUpperCase()));
         paths.put(itemPath, itemOps);
 
         Map<String, Object> searchOps = new LinkedHashMap<>();
-        searchOps.put("post", createSearchOperation(tag, entity, scopePrefix));
+        searchOps.put("post", createSearchOperation(tag, entity, scopePrefix, versionSuffix.toUpperCase()));
         paths.put(searchPath, searchOps);
     }
 
-    private Map<String, Object> createGetOperation(String tag, String entity, String scopePrefix) {
+    private Map<String, Object> createGetOperation(String tag, String entity, String scopePrefix, String operationIdSuffix) {
         Map<String, Object> op = new LinkedHashMap<>();
         op.put("tags", List.of(tag));
         op.put("description", "Get " + entity + " by ID");
-        op.put("operationId", "get" + entity + "ById");
+        String opId = "get" + entity + "ById";
+        if (operationIdSuffix != null) {
+            opId = opId + operationIdSuffix;
+        }
+        op.put("operationId", opId);
 
         op.put("parameters", List.of(Map.of(
                 "in", "path",
@@ -320,11 +325,15 @@ public class OpenApiService {
         return op;
     }
 
-    private Map<String, Object> createSearchOperation(String tag, String entity, String scopePrefix) {
+    private Map<String, Object> createSearchOperation(String tag, String entity, String scopePrefix, String operationIdSuffix) {
         Map<String, Object> op = new LinkedHashMap<>();
         op.put("tags", List.of(tag));
         op.put("description", "Search " + naming.pluralPath(entity));
-        op.put("operationId", "search" + naming.upperFirst(naming.pluralPath(entity).replace("-", "")));
+        String opId = "search" + naming.upperFirst(naming.pluralPath(entity).replace("-", ""));
+        if (operationIdSuffix != null) {
+            opId = opId + operationIdSuffix;
+        }
+        op.put("operationId", opId);
 
         Map<String, Object> requestBody = new LinkedHashMap<>();
         requestBody.put("required", false);
@@ -666,3 +675,4 @@ public class OpenApiService {
         return count;
     }
 }
+
