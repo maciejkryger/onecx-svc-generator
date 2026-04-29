@@ -125,7 +125,8 @@ public class ModelParserService {
     }
 
     public String tableName(String entity) {
-        return dbName(entity);
+        // return table name in SNAKE_UPPER style (e.g. myEntity -> MY_ENTITY)
+        return dbName(entity).toUpperCase();
     }
 
     private String dbName(String value) {
@@ -184,8 +185,9 @@ public class ModelParserService {
 
             if ("ManyToOne".equals(r.relationType()) || "OneToOne".equals(r.relationType())) {
                 sb.append("    @JoinColumn(name = \"")
-                        .append(dbName(r.field()))
-                        .append("_id\")\n");
+                        .append(dbName(r.field()).toUpperCase())
+                        .append("_ID")
+                        .append("\")\n");
                 sb.append("    private ")
                         .append(targetType)
                         .append(" ")
@@ -213,7 +215,7 @@ public class ModelParserService {
 
         for (FieldDef f : fields) {
             sb.append("            <column name=\"")
-                    .append(dbName(f.name()))
+                    .append(dbName(f.name()).toUpperCase())
                     .append("\" type=\"")
                     .append(mapLiquibaseType(f.type()))
                     .append("\"/>\n");
@@ -222,8 +224,8 @@ public class ModelParserService {
         for (RelationDef r : relations) {
             if ("ManyToOne".equals(r.relationType()) || "OneToOne".equals(r.relationType())) {
                 sb.append("            <column name=\"")
-                        .append(dbName(r.field()))
-                        .append("_id\" type=\"VARCHAR(36)\"/>\n");
+                        .append(dbName(r.field()).toUpperCase())
+                        .append("_ID\" type=\"VARCHAR(36)\"/>\n");
             }
         }
 

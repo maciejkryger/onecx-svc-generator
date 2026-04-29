@@ -41,8 +41,7 @@ public class {{entity}}Controller implements {{generatedExternalApiInterface}} {
     }
 
     @Override
-    public Response search{{resourceOperationPlural}}(
-            @Valid {{generatedExternalSearchCriteria}} criteria) {
+    public Response search{{resourceOperationPlural}}({{generatedExternalSearchCriteria}} criteria) {
 
         var pageResult = service.findByCriteria(mapper.toCriteria(criteria));
         List<{{generatedExternalDto}}> result = pageResult.getStream()

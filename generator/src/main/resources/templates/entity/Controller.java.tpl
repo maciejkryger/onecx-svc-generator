@@ -58,8 +58,7 @@ public class {{entity}}Controller implements {{generatedApiInterface}} {
     }
 
     @Override
-    public Response search{{resourceOperationPlural}}(
-            @Valid {{entity}}SearchCriteriaDTO criteria) {
+    public Response search{{resourceOperationPlural}}({{entity}}SearchCriteriaDTO criteria) {
         var result = service.findByCriteria(criteria);
         return Response.ok(mapper.toPageResultDto(result)).build();
     }
