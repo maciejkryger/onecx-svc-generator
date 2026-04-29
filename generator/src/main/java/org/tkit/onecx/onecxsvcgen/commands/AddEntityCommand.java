@@ -173,6 +173,7 @@ public class AddEntityCommand implements Runnable {
             ctx.put("generatedExternalApiInterface", externalApiInterface);
             ctx.put("generatedExternalDto", entity + "DTOV1");
             ctx.put("generatedExternalSearchCriteria", entity + "SearchCriteriaDTOV1");
+            ctx.put("externalOperationSuffix", "V1");
 
             ctx.put("modelPackage", models.modelPackage(pkg));
             ctx.put("daoPackage", models.daoPackage(pkg));

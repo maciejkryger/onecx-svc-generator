@@ -13,7 +13,6 @@ import jakarta.inject.Inject;
 import jakarta.persistence.OptimisticLockException;
 import jakarta.transaction.Transactional;
 import jakarta.validation.ConstraintViolationException;
-import jakarta.validation.Valid;
 import jakarta.ws.rs.core.Response;
 
 import org.jboss.resteasy.reactive.RestResponse;
@@ -36,12 +35,12 @@ public class {{entity}}Controller implements {{generatedExternalApiInterface}} {
     ExternalExceptionMapper exceptionMapper;
 
     @Override
-    public Response get{{entity}}ById(String id) {
+    public Response get{{entity}}ById{{externalOperationSuffix}}(String id) {
         return Response.ok(mapper.toDto(service.findById(id))).build();
     }
 
     @Override
-    public Response search{{resourceOperationPlural}}({{generatedExternalSearchCriteria}} criteria) {
+    public Response search{{resourceOperationPlural}}{{externalOperationSuffix}}({{generatedExternalSearchCriteria}} criteria) {
 
         var pageResult = service.findByCriteria(mapper.toCriteria(criteria));
         List<{{generatedExternalDto}}> result = pageResult.getStream()
