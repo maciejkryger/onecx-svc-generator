@@ -4,47 +4,51 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.OptimisticLockException;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Path;
+import jakarta.ws.rs.core.Response;
 
+import org.jboss.resteasy.reactive.RestResponse;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import org.tkit.quarkus.jpa.exceptions.ConstraintException;
+import org.tkit.quarkus.log.cdi.LogService;
+import org.tkit.quarkus.rs.mappers.OffsetDateTimeMapper;
 
-import {{package}}.rs.common.ExceptionMapper;
 import {{generatedModelPackage}}.ProblemDetailInvalidParamDTO;
 import {{generatedModelPackage}}.ProblemDetailParamDTO;
 import {{generatedModelPackage}}.ProblemDetailResponseDTO;
+import lombok.extern.slf4j.Slf4j;
 
-@ApplicationScoped
-public class InternalExceptionMapper extends ExceptionMapper<ProblemDetailResponseDTO> {
+@Slf4j
+@Mapper(uses = { OffsetDateTimeMapper.class })
+public abstract class InternalExceptionMapper {
 
-    @Override
-    protected ProblemDetailResponseDTO createConstraintViolationResponse(ConstraintViolationException ex) {
-        var dto = problem(constraintViolationsCode(), ex.getMessage());
+    public RestResponse<ProblemDetailResponseDTO> constraint(ConstraintViolationException ex) {
+        var dto = exception(ErrorKeys.CONSTRAINT_VIOLATIONS.name(), ex.getMessage());
         dto.setInvalidParams(createErrorValidationResponse(ex.getConstraintViolations()));
-        return dto;
+        return RestResponse.status(Response.Status.BAD_REQUEST, dto);
     }
 
-    @Override
-    protected ProblemDetailResponseDTO createConstraintExceptionResponse(ConstraintException ex) {
-        var dto = problem(ex.getMessageKey().name(), ex.getConstraints());
+    public RestResponse<ProblemDetailResponseDTO> exception(ConstraintException ex) {
+        var dto = exception(ex.getMessageKey().name(), ex.getConstraints());
         dto.setParams(map(ex.namedParameters));
-        return dto;
+        return RestResponse.status(Response.Status.BAD_REQUEST, dto);
     }
 
-    @Override
-    protected ProblemDetailResponseDTO createOptimisticLockResponse(OptimisticLockException ex) {
-        return problem(optimisticLockCode(), ex.getMessage());
+    @LogService(log = false)
+    public RestResponse<ProblemDetailResponseDTO> optimisticLock(OptimisticLockException ex) {
+        var dto = exception(ErrorKeys.OPTIMISTIC_LOCK.name(), ex.getMessage());
+        return RestResponse.status(Response.Status.BAD_REQUEST, dto);
     }
 
-    private ProblemDetailResponseDTO problem(String errorCode, String detail) {
-        ProblemDetailResponseDTO dto = new ProblemDetailResponseDTO();
-        dto.setErrorCode(errorCode);
-        dto.setDetail(detail);
-        return dto;
-    }
+    @Mapping(target = "removeParamsItem", ignore = true)
+    @Mapping(target = "params", ignore = true)
+    @Mapping(target = "invalidParams", ignore = true)
+    @Mapping(target = "removeInvalidParamsItem", ignore = true)
+    public abstract ProblemDetailResponseDTO exception(String errorCode, String detail);
 
     public List<ProblemDetailParamDTO> map(Map<String, Object> params) {
         if (params == null) {
@@ -60,24 +64,20 @@ public class InternalExceptionMapper extends ExceptionMapper<ProblemDetailRespon
         }).toList();
     }
 
-    public List<ProblemDetailInvalidParamDTO> createErrorValidationResponse(
-            Set<ConstraintViolation<?>> constraintViolations) {
-        if (constraintViolations == null || constraintViolations.isEmpty()) {
-            return List.of();
-        }
-        return constraintViolations.stream()
-                .map(this::createError)
-                .toList();
-    }
+    public abstract List<ProblemDetailInvalidParamDTO> createErrorValidationResponse(
+            Set<ConstraintViolation<?>> constraintViolation);
 
-    public ProblemDetailInvalidParamDTO createError(ConstraintViolation<?> constraintViolation) {
-        ProblemDetailInvalidParamDTO dto = new ProblemDetailInvalidParamDTO();
-        dto.setName(mapPath(constraintViolation.getPropertyPath()));
-        dto.setMessage(constraintViolation.getMessage());
-        return dto;
-    }
+    @Mapping(target = "name", source = "propertyPath")
+    @Mapping(target = "message", source = "message")
+    public abstract ProblemDetailInvalidParamDTO createError(ConstraintViolation<?> constraintViolation);
 
     public String mapPath(Path path) {
         return path.toString();
+    }
+
+    public enum ErrorKeys {
+
+        OPTIMISTIC_LOCK,
+        CONSTRAINT_VIOLATIONS;
     }
 }

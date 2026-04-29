@@ -231,12 +231,7 @@ public class BatchModelCommand implements Runnable {
                         ctx
                 );
 
-                // shared / common exception mapper hierarchy
-                renderIfMissing(
-                        "templates/entity/CommonExceptionMapper.java.tpl",
-                        base.resolve("rs/common/ExceptionMapper.java"),
-                        ctx
-                );
+                // INTERNAL exception mapper (standalone)
                 renderIfMissing(
                         "templates/entity/InternalExceptionMapper.java.tpl",
                         base.resolve("rs/internal/mappers/InternalExceptionMapper.java"),
@@ -346,7 +341,7 @@ public class BatchModelCommand implements Runnable {
         Files.createDirectories(base.resolve("domain/models"));
         Files.createDirectories(base.resolve("domain/daos"));
         Files.createDirectories(base.resolve("domain/services"));
-        Files.createDirectories(base.resolve("rs/common"));
+        // no shared common mapper; internal/external mappers are standalone
         Files.createDirectories(base.resolve("rs/internal/controllers"));
         Files.createDirectories(base.resolve("rs/internal/mappers"));
         Files.createDirectories(base.resolve("rs/external/v1/controllers"));
