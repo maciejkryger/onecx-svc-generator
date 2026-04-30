@@ -720,7 +720,7 @@ public class ModelParserService {
         sb.append("    @Test\n");
         sb.append("    void get").append(entity).append("ByIdMissingShouldThrowNoSuchElementException() {\n");
         sb.append("        assertThrows(NoSuchElementException.class, () -> controller.get")
-                .append(entity).append("ByIdV1(\"missing-").append(dbName(entity)).append("-id\"));\n");
+                .append(entity).append("ById(\"missing-").append(dbName(entity)).append("-id\"));\n");
         sb.append("    }\n\n");
 
         RelationDef relation = firstResolvableSingleRelation(relations);
@@ -1064,7 +1064,7 @@ public class ModelParserService {
         sb.append("    @Test\n");
         sb.append("    void get").append(entity).append("ByIdMissingShouldThrowNoSuchElementException() {\n");
         sb.append("        assertThrows(NoSuchElementException.class, () -> controller.get")
-                .append(entity).append("ById(\"missing-").append(dbName(entity)).append("-id\"));\n");
+                .append(entity).append("ByIdV1(\"missing-").append(dbName(entity)).append("-id\"));\n");
         sb.append("    }\n\n");
 
         sb.append("    @Test\n");
